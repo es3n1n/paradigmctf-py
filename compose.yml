@@ -1,0 +1,58 @@
+name: blockchain-infra
+services:
+  database:
+    container_name: blockchain-infra-database
+    image: redis/redis-stack:latest
+    ports:
+      - '6379:6379'
+      - '8001:8001'
+    environment:
+      - REDIS_ARGS=--save 60 1
+    networks:
+      ctf_network:
+        aliases:
+          - database
+    volumes: 
+      - database:/data
+  ctf-server-orchestrator:
+    container_name: blockchain-infra-orchestrator
+    image: gcr.io/paradigmxyz/infra/paradigmctf.py:latest
+    build: .
+    user: root
+    command: uvicorn ctf_server:orchestrator --host 0.0.0.0 --port 7283 --workers 5
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    ports:
+      - "7283:7283"
+    environment:
+      - BACKEND=docker
+      - DATABASE=redis
+      - REDIS_URL=redis://database:6379/0
+    networks:
+      ctf_network:
+        aliases:
+          - orchestrator
+    depends_on:
+      - database
+  ctf-server-anvil-proxy:
+    container_name: blockchain-infra-anvil-proxy
+    image: gcr.io/paradigmxyz/infra/paradigmctf.py:latest
+    build: .
+    command: uvicorn ctf_server:anvil_proxy --host 0.0.0.0 --port 8545 --workers 5
+    ports:
+      - "8545:8545"
+    environment:
+      - DATABASE=redis
+      - REDIS_URL=redis://database:6379/0
+    networks:
+      ctf_network:
+        aliases:
+          - anvil-proxy
+    depends_on:
+      - database
+volumes:
+  database:
+    driver: local
+networks:
+  ctf_network:
+    name: paradigmctf
