@@ -88,7 +88,7 @@ class Launcher(abc.ABC):
         )
 
     def get_instance_id(self) -> str:
-        return f"chal-{CHALLENGE}-{self.team}".lower()
+        return f"blockchain-{CHALLENGE}-{self.team}".lower()
 
     def update_metadata(self, new_metadata: Dict[str, str]):
         resp = requests.post(
