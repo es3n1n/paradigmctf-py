@@ -1,9 +1,10 @@
 import json
 import sqlite3
-from typing import List, Optional
+from threading import Lock
+from typing import List
+
 from ctf_server.databases import Database
 from ctf_server.types import InstanceInfo
-from threading import Lock
 
 
 class SQLiteDatabase(Database):
@@ -26,7 +27,7 @@ CREATE TABLE IF NOT EXISTS anvil_instances
         self.__conn_lock.acquire()
         try:
             cursor = self.__conn.execute(
-                """INSERT INTO anvil_instances(instance_id, instance_data) VALUES (?, ?)""",
+                'INSERT INTO anvil_instances(instance_id, instance_data) VALUES (?, ?)',
                 (instance_id, json.dumps(instance)),
             )
         finally:
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS anvil_instances
         self.__conn_lock.acquire()
         try:
             cursor = self.__conn.execute(
-                """UPDATE anvil_instances SET instance_data = ? WHERE instance_id = ?""",
+                'UPDATE anvil_instances SET instance_data = ? WHERE instance_id = ?',
                 (json.dumps(instance), instance_id),
             )
         finally:
@@ -48,12 +49,12 @@ CREATE TABLE IF NOT EXISTS anvil_instances
         self.__conn_lock.acquire()
         try:
             cursor = self.__conn.execute(
-                """DELETE FROM anvil_instances WHERE instance_id = ? RETURNING instance_data""", (instance_id,)
+                'DELETE FROM anvil_instances WHERE instance_id = ? RETURNING instance_data', (instance_id,)
             )
             row = cursor.fetchone()
             if row is None:
                 return None
-            
+
             return json.loads(row[0])
         finally:
             cursor.close()
@@ -63,7 +64,7 @@ CREATE TABLE IF NOT EXISTS anvil_instances
         self.__conn_lock.acquire()
         try:
             cursor = self.__conn.execute(
-                """SELECT instance_data FROM anvil_instances"""
+                'SELECT instance_data FROM anvil_instances'
             )
             result = []
             while True:
@@ -76,17 +77,17 @@ CREATE TABLE IF NOT EXISTS anvil_instances
         finally:
             cursor.close()
             self.__conn_lock.release()
-    
+
     def get_instance_by_external_id(self, rpc_id: str) -> InstanceInfo | None:
         self.__conn_lock.acquire()
         try:
             cursor = self.__conn.execute(
-                """SELECT instance_data FROM anvil_instances WHERE rpc_id = ?""", (rpc_id,)
+                'SELECT instance_data FROM anvil_instances WHERE rpc_id = ?', (rpc_id,)
             )
             row = cursor.fetchone()
             if row is None:
                 return None
-            
+
             return json.loads(row[0])
         finally:
             cursor.close()
@@ -96,14 +97,13 @@ CREATE TABLE IF NOT EXISTS anvil_instances
         self.__conn_lock.acquire()
         try:
             cursor = self.__conn.execute(
-                """SELECT instance_data FROM anvil_instances WHERE instance_id = ?""", (instance_id,)
+                'SELECT instance_data FROM anvil_instances WHERE instance_id = ?', (instance_id,)
             )
             row = cursor.fetchone()
             if row is None:
                 return None
-            
+
             return json.loads(row[0])
         finally:
             cursor.close()
             self.__conn_lock.release()
-        

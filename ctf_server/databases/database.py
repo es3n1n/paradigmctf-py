@@ -1,6 +1,8 @@
 import abc
 from typing import Dict, List, Optional
+
 from ctf_server.types import UserData
+
 
 class Database(abc.ABC):
     def __init__(self) -> None:
@@ -17,7 +19,7 @@ class Database(abc.ABC):
     @abc.abstractmethod
     def get_instance(self, instance_id: str) -> Optional[UserData]:
         pass
-    
+
     @abc.abstractmethod
     def get_instance_by_external_id(self, external_id: str) -> Optional[UserData]:
         pass

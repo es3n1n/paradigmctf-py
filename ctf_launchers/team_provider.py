@@ -22,30 +22,30 @@ class TicketTeamProvider(TeamProvider):
         self.__challenge_id = challenge_id
 
     def get_team(self):
-        ticket = self.__check_ticket(input("ticket? "))
+        ticket = self.__check_ticket(input('ticket? '))
         if not ticket:
-            print("invalid ticket!")
+            print('invalid ticket!')
             return None
 
         if ticket.challenge_id != self.__challenge_id:
-            print("invalid ticket!")
+            print('invalid ticket!')
             return None
 
         return ticket.team_id
 
     def __check_ticket(self, ticket: str) -> Ticket:
         ticket_info = requests.post(
-            "https://ctf.paradigm.xyz/api/internal/check-ticket",
+            'https://ctf.paradigm.xyz/api/internal/check-ticket',
             json={
-                "ticket": ticket,
+                'ticket': ticket,
             },
         ).json()
-        if not ticket_info["ok"]:
+        if not ticket_info['ok']:
             return None
 
         return TicketTeamProvider.Ticket(
-            challenge_id=ticket_info["ticket"]["challengeId"],
-            team_id=ticket_info["ticket"]["teamId"],
+            challenge_id=ticket_info['ticket']['challengeId'],
+            team_id=ticket_info['ticket']['teamId'],
         )
 
 
@@ -55,10 +55,10 @@ class StaticTeamProvider(TeamProvider):
         self.__ticket = ticket
 
     def get_team(self) -> str | None:
-        ticket = input("ticket? ")
+        ticket = input('ticket? ')
 
         if ticket != self.__ticket:
-            print("invalid ticket!")
+            print('invalid ticket!')
             return None
 
         return self.__team_id
@@ -73,10 +73,10 @@ class LocalTeamProvider(TeamProvider):
 
 
 def get_team_provider() -> TeamProvider:
-    env = os.getenv("ENV", "local")
-    if env == "local":
-        return LocalTeamProvider(team_id="local")
-    elif env == "dev":
-        return StaticTeamProvider(team_id="dev", ticket="dev2023")
+    env = os.getenv('ENV', 'local')
+    if env == 'local':
+        return LocalTeamProvider(team_id='local')
+    elif env == 'dev':
+        return StaticTeamProvider(team_id='dev', ticket='dev2023')
     else:
-        return TicketTeamProvider(challenge_id=os.getenv("CHALLENGE_ID"))
+        return TicketTeamProvider(challenge_id=os.getenv('CHALLENGE_ID'))

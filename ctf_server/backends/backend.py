@@ -5,6 +5,10 @@ import string
 import time
 from threading import Thread
 
+from eth_account import Account
+from eth_account.hdaccount import key_from_seed, seed_from_mnemonic
+from web3 import Web3
+
 from ctf_server.databases.database import Database
 from ctf_server.types import (
     DEFAULT_ACCOUNTS,
@@ -15,10 +19,7 @@ from ctf_server.types import (
     LaunchAnvilInstanceArgs,
     UserData,
 )
-from eth_account import Account
-from eth_account.hdaccount import key_from_seed, seed_from_mnemonic
 from foundry.anvil import anvil_setBalance
-from web3 import Web3
 
 
 class InstanceExists(Exception):
@@ -31,7 +32,7 @@ class Backend(abc.ABC):
 
         Thread(
             target=self.__instance_pruner_thread,
-            name=f"{self.__class__.__name__} Anvil Pruner",
+            name=f'{self.__class__.__name__} Anvil Pruner',
             daemon=True,
         ).start()
 
@@ -40,24 +41,23 @@ class Backend(abc.ABC):
             try:
                 for instance in self._database.get_expired_instances():
                     logging.info(
-                        "pruning expired instance: %s", instance["instance_id"]
+                        'pruning expired instance: %s', instance['instance_id']
                     )
 
-                    self.kill_instance(instance["instance_id"])
+                    self.kill_instance(instance['instance_id'])
             except Exception as e:
-                logging.error("failed to prune instances", exc_info=e)
+                logging.error('failed to prune instances', exc_info=e)
             time.sleep(1)
 
     def launch_instance(self, args: CreateInstanceRequest) -> UserData:
-        if self._database.get_instance(args["instance_id"]) is not None:
+        if self._database.get_instance(args['instance_id']) is not None:
             raise InstanceExists()
 
         try:
             user_data = self._launch_instance_impl(args)
-            self._database.register_instance(args["instance_id"], user_data)
+            self._database.register_instance(args['instance_id'], user_data)
             return user_data
-
-        except:
+        except:  # noqa
             self._cleanup_instance(args)
             raise
 
@@ -72,13 +72,13 @@ class Backend(abc.ABC):
         pass
 
     def _generate_rpc_id(self, N: int = 24) -> str:
-        return "".join(
+        return ''.join(
             random.SystemRandom().choice(string.ascii_letters) for _ in range(N)
         )
 
     def __derive_account(self, derivation_path: str, mnemonic: str, index: int) -> str:
-        seed = seed_from_mnemonic(mnemonic, "")
-        private_key = key_from_seed(seed, f"{derivation_path}{index}")
+        seed = seed_from_mnemonic(mnemonic, '')
+        private_key = key_from_seed(seed, f'{derivation_path}{index}')
 
         return Account.from_key(private_key)
 
@@ -87,13 +87,13 @@ class Backend(abc.ABC):
             time.sleep(0.1)
             continue
 
-        for i in range(args.get("accounts", DEFAULT_ACCOUNTS)):
+        for i in range(args.get('accounts', DEFAULT_ACCOUNTS)):
             anvil_setBalance(
                 web3,
                 self.__derive_account(
-                    args.get("derivation_path", DEFAULT_DERIVATION_PATH),
-                    args.get("mnemonic", DEFAULT_MNEMONIC),
+                    args.get('derivation_path', DEFAULT_DERIVATION_PATH),
+                    args.get('mnemonic', DEFAULT_MNEMONIC),
                     i,
                 ).address,
-                hex(int(args.get("balance", DEFAULT_BALANCE) * 10**18)),
+                hex(int(args.get('balance', DEFAULT_BALANCE) * 10**18)),
             )

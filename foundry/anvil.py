@@ -3,16 +3,16 @@ from web3.types import RPCResponse
 
 
 def check_error(resp: RPCResponse):
-    if "error" in resp:
-        raise Exception("rpc exception", resp["error"])
+    if 'error' in resp:
+        raise Exception('rpc exception', resp['error'])
 
 
 def anvil_autoImpersonateAccount(web3: Web3, enabled: bool):
-    check_error(web3.provider.make_request("anvil_autoImpersonateAccount", [enabled]))
+    check_error(web3.provider.make_request('anvil_autoImpersonateAccount', [enabled]))
 
 
 def anvil_setCode(web3: Web3, addr: str, bytecode: str):
-    check_error(web3.provider.make_request("anvil_setCode", [addr, bytecode]))
+    check_error(web3.provider.make_request('anvil_setCode', [addr, bytecode]))
 
 
 def anvil_setStorageAt(
@@ -21,7 +21,7 @@ def anvil_setStorageAt(
     slot: str,
     value: str,
 ):
-    check_error(web3.provider.make_request("anvil_setStorageAt", [addr, slot, value]))
+    check_error(web3.provider.make_request('anvil_setStorageAt', [addr, slot, value]))
 
 
 def anvil_setBalance(
@@ -29,4 +29,4 @@ def anvil_setBalance(
     addr: str,
     balance: str,
 ):
-    check_error(web3.provider.make_request("anvil_setBalance", [addr, balance]))
+    check_error(web3.provider.make_request('anvil_setBalance', [addr, balance]))
