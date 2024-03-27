@@ -187,4 +187,3 @@ class Launcher(abc.ABC):
 
         print(f'- private key:        {get_player_account(mnemonic).key.hex()}')
         print(f'- challenge contract: {challenge_address}')
-
