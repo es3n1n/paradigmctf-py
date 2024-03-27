@@ -35,6 +35,10 @@ class Action:
     handler: Callable[[], int]
 
 
+class NonSensitiveError(Exception):
+    pass
+
+
 class Launcher(abc.ABC):
     def __init__(
             self, project_location: str, provider: TeamProvider, actions: List[Action] = []
@@ -66,9 +70,12 @@ class Launcher(abc.ABC):
 
         try:
             exit(handler.handler())
-        except Exception as e:
+        except NonSensitiveError as e:
+            print('error:', e)
+            exit(1)
+        except Exception:  # noqa
             traceback.print_exc()
-            print('an error occurred', e)
+            print('an internal error occurred, contact admins')
             exit(1)
 
     def get_anvil_instances(self) -> Dict[str, LaunchAnvilInstanceArgs]:
@@ -117,7 +124,7 @@ class Launcher(abc.ABC):
             ),
         ).json()
         if not body['ok']:
-            raise Exception(body['message'])
+            raise NonSensitiveError(body['message'])
 
         user_data = body['data']
 
@@ -139,7 +146,7 @@ class Launcher(abc.ABC):
             f'{ORCHESTRATOR_HOST}/instances/{self.get_instance_id()}'
         ).json()
         if not body['ok']:
-            raise Exception(body['message'])
+            raise NonSensitiveError(body['message'])
 
         self._print_instance_info(body['data'])
         return 0
@@ -149,7 +156,7 @@ class Launcher(abc.ABC):
         body = resp.json()
 
         print(body['message'])
-        return 1
+        return 0
 
     def deploy(self, user_data: UserData, mnemonic: str) -> str:
         web3 = get_privileged_web3(user_data, 'main')
