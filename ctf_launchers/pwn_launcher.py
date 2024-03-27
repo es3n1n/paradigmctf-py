@@ -8,7 +8,7 @@ from ctf_launchers.team_provider import TeamProvider, get_team_provider
 from ctf_server.types import UserData, get_privileged_web3
 
 
-FLAG = os.getenv('FLAG', 'PCTF{flag}')
+FLAG = os.getenv('FLAG', 'cr3{flag}')
 
 
 class PwnChallengeLauncher(Launcher):
@@ -37,7 +37,7 @@ class PwnChallengeLauncher(Launcher):
             user_data, user_data['metadata']['challenge_address']
         ):
             print('are you sure you solved it?')
-            return 1
+            return 0
 
         print(FLAG)
         return 0
