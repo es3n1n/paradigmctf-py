@@ -1,2 +1,4 @@
 **/__pycache__
 *.pyc
+dev-requirements.txt
+setup.cfg
