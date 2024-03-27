@@ -13,7 +13,7 @@ class Database(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def unregister_instance(self, instance_id: str) -> UserData:
+    def unregister_instance(self, instance_id: str) -> Optional[UserData]:
         pass
 
     @abc.abstractmethod
@@ -24,6 +24,7 @@ class Database(abc.ABC):
     def get_instance_by_external_id(self, external_id: str) -> Optional[UserData]:
         pass
 
+    @abc.abstractmethod
     def get_expired_instances(self) -> List[UserData]:
         pass
 

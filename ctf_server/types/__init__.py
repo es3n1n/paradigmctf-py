@@ -43,7 +43,7 @@ def format_anvil_args(args: LaunchAnvilInstanceArgs, anvil_id: str, port: int = 
     cmd_args += ['--state-interval', '5']
 
     if args.get('fork_url') is not None:
-        cmd_args += ['--fork-url', args['fork_url']]
+        cmd_args += ['--fork-url', str(args['fork_url'])]
 
     if args.get('fork_chain_id') is not None:
         cmd_args += ['--fork-chain-id', str(args['fork_chain_id'])]
@@ -79,8 +79,8 @@ class CreateInstanceRequest(TypedDict):
 
 class InstanceInfo(TypedDict):
     id: str
-    ip: str
-    port: int
+    ip: NotRequired[str]
+    port: NotRequired[int]
 
 
 @dataclass

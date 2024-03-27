@@ -12,7 +12,9 @@ class RedisDatabase(Database):
     def __init__(self, url: str, redis_kwargs: Dict[str, Any] = {}) -> None:
         super().__init__()
 
-        self.__client: redis.Redis = redis.Redis.from_url(
+        # note(es3n1n, 27.03.24): For some reason their typehint is set to None, but in their code they're literally
+        # returning the connection object, like what?
+        self.__client: redis.Redis = redis.Redis.from_url(  # type: ignore
             url,
             decode_responses=True,
             **redis_kwargs,
@@ -38,7 +40,7 @@ class RedisDatabase(Database):
     def update_instance(self, instance_id: str, instance: UserData):
         raise Exception('not supported')
 
-    def unregister_instance(self, instance_id: str) -> UserData:
+    def unregister_instance(self, instance_id: str) -> Optional[UserData]:
         instance = self.__client.json().get(f'instance/{instance_id}')
         if instance is None:
             return None
@@ -61,7 +63,7 @@ class RedisDatabase(Database):
         instance['metadata'] = {}
         metadata = self.__client.hgetall(f'metadata/{instance_id}')
         if metadata is not None:
-            instance['metadata'] = metadata
+            instance['metadata'] = metadata  # type: ignore
 
         return instance
 
@@ -70,14 +72,15 @@ class RedisDatabase(Database):
         if instance_id is None:
             return None
 
-        return self.get_instance(instance_id)
+        return self.get_instance(instance_id)  # type: ignore
 
     def get_all_instances(self) -> List[UserData]:
         keys = self.__client.keys('instance/*')
 
         result = []
-        for key in keys:
-            result.append(self.get_instance(key.split('/')[1]))
+        for key in keys:  # type: ignore
+            if instance := self.get_instance(key.split('/')[1]):
+                result.append(instance)
 
         return result
 
@@ -87,8 +90,9 @@ class RedisDatabase(Database):
         )
 
         instances = []
-        for instance_id in instance_ids:
-            instances.append(self.get_instance(instance_id))
+        for instance_id in instance_ids:  # type: ignore
+            if instance := self.get_instance(instance_id):
+                instances.append(instance)
 
         return instances
 

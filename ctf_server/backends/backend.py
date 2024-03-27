@@ -4,9 +4,11 @@ import random
 import string
 import time
 from threading import Thread
+from typing import Optional
 
 from eth_account import Account
 from eth_account.hdaccount import key_from_seed, seed_from_mnemonic
+from eth_account.signers.local import LocalAccount
 from web3 import Web3
 
 from ctf_server.databases.database import Database
@@ -61,6 +63,7 @@ class Backend(abc.ABC):
             self._cleanup_instance(args)
             raise
 
+    @abc.abstractmethod
     def _launch_instance_impl(self, args: CreateInstanceRequest) -> UserData:
         pass
 
@@ -68,7 +71,7 @@ class Backend(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def kill_instance(self, id: str) -> UserData:
+    def kill_instance(self, id: str) -> Optional[UserData]:
         pass
 
     def _generate_rpc_id(self, N: int = 24) -> str:
@@ -76,7 +79,7 @@ class Backend(abc.ABC):
             random.SystemRandom().choice(string.ascii_letters) for _ in range(N)
         )
 
-    def __derive_account(self, derivation_path: str, mnemonic: str, index: int) -> str:
+    def __derive_account(self, derivation_path: str, mnemonic: str, index: int) -> LocalAccount:
         seed = seed_from_mnemonic(mnemonic, '')
         private_key = key_from_seed(seed, f'{derivation_path}{index}')
 
@@ -87,13 +90,13 @@ class Backend(abc.ABC):
             time.sleep(0.1)
             continue
 
-        for i in range(args.get('accounts', DEFAULT_ACCOUNTS)):
+        for i in range(args.get('accounts', None) or DEFAULT_ACCOUNTS):
             anvil_setBalance(
                 web3,
                 self.__derive_account(
-                    args.get('derivation_path', DEFAULT_DERIVATION_PATH),
-                    args.get('mnemonic', DEFAULT_MNEMONIC),
+                    args.get('derivation_path', None) or DEFAULT_DERIVATION_PATH,
+                    args.get('mnemonic', None) or DEFAULT_MNEMONIC,
                     i,
                 ).address,
-                hex(int(args.get('balance', DEFAULT_BALANCE) * 10**18)),
+                hex(int(args.get('balance', None) or DEFAULT_BALANCE) * 10**18),
             )

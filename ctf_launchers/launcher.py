@@ -3,8 +3,7 @@ import os
 import traceback
 from dataclasses import dataclass
 from time import time
-from typing import Callable, Dict, List
-from typing import Optional
+from typing import Callable, Dict, List, Optional
 
 import requests
 from eth_account.hdaccount import generate_mnemonic
@@ -19,6 +18,7 @@ from ctf_server.types import (
     get_player_account,
     get_privileged_web3,
 )
+
 
 CHALLENGE = os.getenv('CHALLENGE', 'challenge')
 ORCHESTRATOR_HOST = os.getenv('ORCHESTRATOR_HOST', 'http://orchestrator:7283')
@@ -95,9 +95,7 @@ class Launcher(abc.ABC):
             kwargs['fork_url'] = ETH_RPC_URL
         if 'mnemonic' not in kwargs:
             kwargs['mnemonic'] = self.mnemonic
-        return LaunchAnvilInstanceArgs(
-            **kwargs,
-        )
+        return LaunchAnvilInstanceArgs(**kwargs)  # type: ignore
 
     def get_instance_id(self) -> str:
         return f'blockchain-{CHALLENGE}-{self.team}'.lower()
@@ -175,7 +173,7 @@ class Launcher(abc.ABC):
             challenge_address: Optional[str] = None
     ) -> None:
         print('---- instance info ----')
-        print(f'- will be terminated in: {(user_data.get("expires_at") - time()) / 60:.2f} minutes')
+        print(f'- will be terminated in: {(user_data.get("expires_at", 0) - time()) / 60:.2f} minutes')
         print('- rpc endpoints:')
         for anvil_id in user_data['anvil_instances']:
             print(f'    - {PUBLIC_HOST}/{user_data["external_id"]}/{anvil_id}')

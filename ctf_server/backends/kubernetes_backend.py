@@ -1,7 +1,7 @@
 import http.client
 import shlex
 import time
-from typing import Any, List
+from typing import Any, Dict, List, Optional
 
 from kubernetes import config
 from kubernetes.client.api import core_v1_api
@@ -12,6 +12,7 @@ from web3 import Web3
 from ctf_server.databases.database import Database
 from ctf_server.types import DEFAULT_IMAGE, CreateInstanceRequest, UserData, format_anvil_args
 
+from ..types import InstanceInfo
 from .backend import Backend
 
 
@@ -46,14 +47,15 @@ class KubernetesBackend(Backend):
 
         while True:
             api_response = self.__core_v1.read_namespaced_pod(
-                name=pod_manifest['metadata']['name'], namespace='default'
+                name=pod_manifest['metadata']['name'],  # type: ignore
+                namespace='default'
             )
             if api_response.status.phase != 'Pending':
                 break
             time.sleep(1)
 
-        anvil_instances = {}
-        for offset, anvil_id in enumerate(request.get('anvil_instances', []).keys()):
+        anvil_instances: Dict[str, InstanceInfo] = {}
+        for offset, anvil_id in enumerate(request.get('anvil_instances', {}).keys()):
             anvil_instances[anvil_id] = {
                 'id': anvil_id,
                 'ip': api_response.status.pod_ip,
@@ -69,8 +71,8 @@ class KubernetesBackend(Backend):
                 ),
             )
 
-        daemon_instances = {}
-        for daemon_id in request.get('daemon_instances', []).keys():
+        daemon_instances: Dict[str, InstanceInfo] = {}
+        for daemon_id in request.get('daemon_instances', {}).keys():
             daemon_instances[daemon_id] = {'id': daemon_id}
 
         now = time.time()
@@ -110,7 +112,7 @@ class KubernetesBackend(Backend):
                 ],
             }
             for offset, (anvil_id, anvil_args) in enumerate(
-                args.get('anvil_instances', []).items()
+                args.get('anvil_instances', {}).items()
             )
         ]
 
@@ -126,10 +128,10 @@ class KubernetesBackend(Backend):
                     }
                 ],
             }
-            for (daemon_id, daemon_args) in args.get('daemon_instances', []).items()
+            for (daemon_id, daemon_args) in args.get('daemon_instances', {}).items()
         ]
 
-    def kill_instance(self, instance_id: str) -> UserData:
+    def kill_instance(self, instance_id: str) -> Optional[UserData]:
         instance = self._database.unregister_instance(instance_id)
         if instance is None:
             return None

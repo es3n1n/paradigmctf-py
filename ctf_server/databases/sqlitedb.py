@@ -1,10 +1,10 @@
 import json
 import sqlite3
 from threading import Lock
-from typing import List
+from typing import List, Optional
 
 from ctf_server.databases import Database
-from ctf_server.types import InstanceInfo
+from ctf_server.types import InstanceInfo, UserData
 
 
 class SQLiteDatabase(Database):
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS anvil_instances
 );"""
         )
 
-    def register_instance(self, instance_id: str, instance: InstanceInfo):
+    def register_instance(self, instance_id: str, instance: UserData):
         self.__conn_lock.acquire()
         try:
             cursor = self.__conn.execute(
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS anvil_instances
             cursor.close()
             self.__conn_lock.release()
 
-    def unregister_instance(self, instance_id: str) -> InstanceInfo:
+    def unregister_instance(self, instance_id: str) -> Optional[UserData]:
         self.__conn_lock.acquire()
         try:
             cursor = self.__conn.execute(
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS anvil_instances
             cursor.close()
             self.__conn_lock.release()
 
-    def get_instance_by_external_id(self, rpc_id: str) -> InstanceInfo | None:
+    def get_instance_by_external_id(self, rpc_id: str) -> Optional[UserData]:
         self.__conn_lock.acquire()
         try:
             cursor = self.__conn.execute(
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS anvil_instances
             cursor.close()
             self.__conn_lock.release()
 
-    def get_instance(self, instance_id: str) -> InstanceInfo | None:
+    def get_instance(self, instance_id: str) -> Optional[UserData]:
         self.__conn_lock.acquire()
         try:
             cursor = self.__conn.execute(
@@ -107,3 +107,6 @@ CREATE TABLE IF NOT EXISTS anvil_instances
         finally:
             cursor.close()
             self.__conn_lock.release()
+
+    def get_expired_instances(self) -> List[UserData]:
+        return []

@@ -17,14 +17,14 @@ def deploy(
 ) -> str:
     anvil_autoImpersonateAccount(web3, True)
 
-    rfd, wfd = os.pipe2(os.O_NONBLOCK)
+    rfd, wfd = os.pipe2(os.O_NONBLOCK)  # type: ignore
 
     proc = subprocess.Popen(
         args=[
             '/opt/foundry/bin/forge',
             'script',
             '--rpc-url',
-            web3.provider.endpoint_uri,
+            web3.provider.endpoint_uri,  # type: ignore
             '--out',
             '/artifacts/out',
             '--cache-path',

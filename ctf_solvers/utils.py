@@ -10,7 +10,7 @@ def solve(
     player_key: str,
     challenge_addr: str,
     solve_script: str = 'script/Solve.s.sol:Solve',
-) -> str:
+) -> None:
     forge_location = shutil.which('forge')
     if forge_location is None:
         forge_location = '/opt/foundry/bin/forge'
@@ -20,7 +20,7 @@ def solve(
             forge_location,
             'script',
             '--rpc-url',
-            web3.provider.endpoint_uri,
+            web3.provider.endpoint_uri,  # type: ignore
             '--slow',
             '-vvvvv',
             '--broadcast',

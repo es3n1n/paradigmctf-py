@@ -1,6 +1,7 @@
-import yaml
-import sys
 import os
+import sys
+
+import yaml
 from pwn import remote
 
 
@@ -28,7 +29,7 @@ class TicketedRemote:
         if env == 'dev':
             ticket = 'dev2023'
         else:
-            ticket = os.getenv('SECRET') + ':healthcheck-team:' + challenge_id
+            ticket = os.getenv('SECRET', '') + ':healthcheck-team:' + challenge_id
 
         self.__r.send(ticket.encode('utf8'))
         self.__r.send(b'\n')

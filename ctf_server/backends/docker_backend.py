@@ -2,7 +2,7 @@ import http.client
 import logging
 import shlex
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import docker
 from docker.errors import APIError, NotFound
@@ -86,7 +86,7 @@ class DockerBackend(Backend):
                 ),
             )
 
-        daemon_instances = {}
+        daemon_instances: Dict[str, InstanceInfo] = dict()
         for daemon_id, daemon_container in daemon_containers.items():
             daemon_instances[daemon_id] = {
                 'id': daemon_id,
@@ -108,11 +108,11 @@ class DockerBackend(Backend):
 
         self.__try_delete(
             instance_id,
-            args.get('anvil_instances', {}).keys(),
-            args.get('daemon_instances', {}).keys(),
+            list(args.get('anvil_instances', {}).keys()),
+            list(args.get('daemon_instances', {}).keys()),
         )
 
-    def kill_instance(self, instance_id: str) -> UserData:
+    def kill_instance(self, instance_id: str) -> Optional[UserData]:
         instance = self._database.unregister_instance(instance_id)
         if instance is None:
             return None

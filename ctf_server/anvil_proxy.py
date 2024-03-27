@@ -1,15 +1,15 @@
 import asyncio
 import json
 import logging
-from ast import List
 from contextlib import asynccontextmanager
-from typing import Any, Optional
-from typing import Dict
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 import websockets
 from fastapi import FastAPI, Request, WebSocket
+from websockets import WebSocketClientProtocol
 
+from .databases import Database
 from .utils import load_database
 
 
@@ -23,6 +23,10 @@ DISALLOWED_METHODS = [
     'eth_sendTransaction',
     'eth_sendUnsignedTransaction',
 ]
+
+# note(es3n1n, 27.03.24): HACK: mypy won't know that we will initialize these within the lifespan
+session: aiohttp.ClientSession = None  # type: ignore
+database: Database = None  # type: ignore
 
 
 @asynccontextmanager
@@ -140,7 +144,7 @@ async def rpc(external_id: str, anvil_id: str, request: Request):
     return await proxy_request(external_id, anvil_id, body['id'], body)
 
 
-async def forward_message(client_to_remote: bool, client_ws: WebSocket, remote_ws: websockets):
+async def forward_message(client_to_remote: bool, client_ws: WebSocket, remote_ws: WebSocketClientProtocol):
     if client_to_remote:
         async for message in client_ws.iter_text():
             try:
@@ -154,9 +158,13 @@ async def forward_message(client_to_remote: bool, client_ws: WebSocket, remote_w
                 await client_ws.send_json(validation)
             else:
                 await remote_ws.send(message)
-    else:
-        async for message in remote_ws:
-            await client_ws.send_text(message)
+        return
+
+    async for message in remote_ws:  # type: ignore
+        message_str: str = message
+        if isinstance(message, bytes):
+            message_str = message.decode()
+        await client_ws.send_text(message_str)
 
 
 @app.websocket('/{external_id}/{anvil_id}/ws')

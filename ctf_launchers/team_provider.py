@@ -33,7 +33,7 @@ class TicketTeamProvider(TeamProvider):
 
         return ticket.team_id
 
-    def __check_ticket(self, ticket: str) -> Ticket:
+    def __check_ticket(self, ticket: str) -> Optional[Ticket]:
         ticket_info = requests.post(
             'https://ctf.paradigm.xyz/api/internal/check-ticket',
             json={

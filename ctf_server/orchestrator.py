@@ -4,9 +4,16 @@ from typing import Dict
 
 from fastapi import FastAPI
 
+from .backends import Backend
 from .backends.backend import InstanceExists
+from .databases import Database
 from .types import CreateInstanceRequest
 from .utils import load_backend, load_database
+
+
+# note(es3n1n, 27.03.24): HACK: mypy won't know that we will initialize these within the lifespan
+database: Database = None  # type: ignore
+backend: Backend = None  # type: ignore
 
 
 @asynccontextmanager
