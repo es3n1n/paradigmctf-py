@@ -3,7 +3,9 @@ import json
 import logging
 from ast import Dict, List
 from contextlib import asynccontextmanager
+from typing import Any
 from typing import Any, Optional
+from typing import Dict
 
 import aiohttp
 import websockets
@@ -43,7 +45,7 @@ async def root():
     return 'rpc proxy running'
 
 
-def jsonrpc_fail(id: Any, code: int, message: str) -> Dict:
+def jsonrpc_fail(id: Any, code: int, message: str) -> dict[str, str | dict[str, str | int] | Any]:
     return {
         'jsonrpc': '2.0',
         'id': id,

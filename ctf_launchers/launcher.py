@@ -2,7 +2,9 @@ import abc
 import os
 import traceback
 from dataclasses import dataclass
+from time import time
 from typing import Callable, Dict, List
+from typing import Optional
 
 import requests
 from eth_account.hdaccount import generate_mnemonic
@@ -21,6 +23,7 @@ from ctf_server.types import (
 CHALLENGE = os.getenv('CHALLENGE', 'challenge')
 ORCHESTRATOR_HOST = os.getenv('ORCHESTRATOR_HOST', 'http://orchestrator:7283')
 PUBLIC_HOST = os.getenv('PUBLIC_HOST', 'http://127.0.0.1:8545')
+PUBLIC_WEBSOCKET_HOST = http_url_to_ws(PUBLIC_HOST)
 
 ETH_RPC_URL = os.getenv('ETH_RPC_URL')
 TIMEOUT = int(os.getenv('TIMEOUT', '1440'))
@@ -39,10 +42,11 @@ class Launcher(abc.ABC):
         self.project_location = project_location
         self.__team_provider = provider
 
-        self._actions = actions
-
+        self._actions = []
         self._actions.append(Action(name='launch new instance', handler=self.launch_instance))
-        self._actions.append(Action(name='kill instance', handler=self.launch_instance))
+        self._actions.append(Action(name='instance info', handler=self.instance_info))
+        self._actions.append(Action(name='kill instance', handler=self.kill_instance))
+        self._actions = [*self._actions, *actions]
 
     def run(self):
         self.team = self.__team_provider.get_team()
@@ -120,23 +124,24 @@ class Launcher(abc.ABC):
         print('deploying challenge...')
         challenge_addr = self.deploy(user_data, self.mnemonic)
 
-        self.update_metadata(
+        if x := self.update_metadata(
             {'mnemonic': self.mnemonic, 'challenge_address': challenge_addr}
-        )
+        ):
+            print('unable to update metadata')
+            return x
 
-        PUBLIC_WEBSOCKET_HOST = http_url_to_ws(PUBLIC_HOST)
+        print('your private blockchain has been set up!')
+        self._print_instance_info(user_data, self.mnemonic, challenge_addr)
+        return 0
 
-        print()
-        print('your private blockchain has been set up')
-        print(f'it will automatically terminate in {TIMEOUT} minutes')
-        print('---')
-        print('rpc endpoints:')
-        for id in user_data['anvil_instances']:
-            print(f'    - {PUBLIC_HOST}/{user_data["external_id"]}/{id}')
-            print(f'    - {PUBLIC_WEBSOCKET_HOST}/{user_data["external_id"]}/{id}/ws')
+    def instance_info(self) -> int:
+        body = requests.get(
+            f'{ORCHESTRATOR_HOST}/instances/{self.get_instance_id()}'
+        ).json()
+        if not body['ok']:
+            raise Exception(body['message'])
 
-        print(f'private key:        {get_player_account(self.mnemonic).key.hex()}')
-        print(f'challenge contract: {challenge_addr}')
+        self._print_instance_info(body['data'])
         return 0
 
     def kill_instance(self) -> int:
@@ -155,3 +160,24 @@ class Launcher(abc.ABC):
 
     def get_deployment_args(self, user_data: UserData) -> Dict[str, str]:
         return {}
+
+    def _print_instance_info(
+            self,
+            user_data: dict,
+            mnemonic: Optional[str] = None,
+            challenge_address: Optional[str] = None
+    ) -> None:
+        print('---- instance info ----')
+        print(f'- will be terminated in: {(user_data.get("expires_at") - time()) / 60:.2f} minutes')
+        print('- rpc endpoints:')
+        for anvil_id in user_data['anvil_instances']:
+            print(f'    - {PUBLIC_HOST}/{user_data["external_id"]}/{anvil_id}')
+            print(f'    - {PUBLIC_WEBSOCKET_HOST}/{user_data["external_id"]}/{anvil_id}/ws')
+
+        metadata = user_data.get('metadata', {})
+        mnemonic = mnemonic or metadata.get('mnemonic', 'none')
+        challenge_address = challenge_address or metadata.get('challenge_address', 'none')
+
+        print(f'- private key:        {get_player_account(mnemonic).key.hex()}')
+        print(f'- challenge contract: {challenge_address}')
+

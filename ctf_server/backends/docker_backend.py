@@ -119,8 +119,8 @@ class DockerBackend(Backend):
 
         self.__try_delete(
             instance_id,
-            instance.get('anvil_instances', {}).keys(),
-            instance.get('daemon_instances', {}).keys(),
+            list(instance.get('anvil_instances', {}).keys()),
+            list(instance.get('daemon_instances', {}).keys()),
         )
 
         return instance

@@ -90,7 +90,6 @@ class RedisDatabase(Database):
         for instance_id in instance_ids:
             instances.append(self.get_instance(instance_id))
 
-        print(instances)
         return instances
 
     def update_metadata(self, instance_id: str, metadata: Dict[str, str]):
