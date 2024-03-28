@@ -1,5 +1,6 @@
 import time
-from typing import Any, Dict, List, Optional
+from json import dumps, loads
+from typing import Any, Dict, List, Optional, Union
 
 import redis
 
@@ -63,7 +64,8 @@ class RedisDatabase(Database):
         instance['metadata'] = {}
         metadata = self.__client.hgetall(f'metadata/{instance_id}')
         if metadata is not None:
-            instance['metadata'] = metadata  # type: ignore
+            metadata = {k: loads(v) for k, v in metadata.items()}  # type: ignore
+            instance['metadata'] = metadata
 
         return instance
 
@@ -96,10 +98,10 @@ class RedisDatabase(Database):
 
         return instances
 
-    def update_metadata(self, instance_id: str, metadata: Dict[str, str]):
+    def update_metadata(self, instance_id: str, metadata: Dict[str, Union[str, List[Dict[str, str]]]]):
         pipeline = self.__client.pipeline()
         try:
             for k, v in metadata.items():
-                pipeline.hset(f'metadata/{instance_id}', k, v)
+                pipeline.hset(f'metadata/{instance_id}', k, dumps(v))
         finally:
             pipeline.execute()

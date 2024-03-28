@@ -3,13 +3,15 @@ import os
 import traceback
 from dataclasses import dataclass
 from time import time
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 
 import requests
 from eth_account.hdaccount import generate_mnemonic
 
+from ctf_launchers.deployer import deploy
 from ctf_launchers.team_provider import TeamProvider
-from ctf_launchers.utils import deploy, http_url_to_ws
+from ctf_launchers.types import ChallengeContract
+from ctf_launchers.utils import http_url_to_ws
 from ctf_server.types import (
     CreateInstanceRequest,
     DaemonInstanceArgs,
@@ -100,7 +102,8 @@ class Launcher(abc.ABC):
     def get_instance_id(self) -> str:
         return f'blockchain-{CHALLENGE}-{self.team}'.lower()
 
-    def update_metadata(self, new_metadata: Dict[str, str]):
+    # todo(es3n1n, 28.03.24): create a type alias for metadata and replace it everywhere
+    def update_metadata(self, new_metadata: Dict[str, Union[str, List[ChallengeContract]]]):
         resp = requests.post(
             f'{ORCHESTRATOR_HOST}/instances/{self.get_instance_id()}/metadata',
             json=new_metadata,
@@ -127,16 +130,16 @@ class Launcher(abc.ABC):
         user_data = body['data']
 
         print('deploying challenge...')
-        challenge_addr = self.deploy(user_data, self.mnemonic)
+        challenge_contracts = self.deploy(user_data, self.mnemonic)
 
         if x := self.update_metadata(
-            {'mnemonic': self.mnemonic, 'challenge_address': challenge_addr}
+            {'mnemonic': self.mnemonic, 'challenge_contracts': challenge_contracts}
         ):
             print('unable to update metadata')
             return x
 
         print('your private blockchain has been set up!')
-        self._print_instance_info(user_data, self.mnemonic, challenge_addr)
+        self._print_instance_info(user_data, self.mnemonic, challenge_contracts)
         return 0
 
     def instance_info(self) -> int:
@@ -156,7 +159,7 @@ class Launcher(abc.ABC):
         print(body['message'])
         return 0
 
-    def deploy(self, user_data: UserData, mnemonic: str) -> str:
+    def deploy(self, user_data: UserData, mnemonic: str) -> List[ChallengeContract]:
         web3 = get_privileged_web3(user_data, 'main')
 
         return deploy(
@@ -170,7 +173,7 @@ class Launcher(abc.ABC):
             self,
             user_data: dict,
             mnemonic: Optional[str] = None,
-            challenge_address: Optional[str] = None
+            challenge_contracts: Optional[List[ChallengeContract]] = None
     ) -> None:
         print('---- instance info ----')
         print(f'- will be terminated in: {(user_data.get("expires_at", 0) - time()) / 60:.2f} minutes')
@@ -181,7 +184,9 @@ class Launcher(abc.ABC):
 
         metadata = user_data.get('metadata', {})
         mnemonic = mnemonic or metadata.get('mnemonic', 'none')
-        challenge_address = challenge_address or metadata.get('challenge_address', 'none')
+        challenge_contracts = challenge_contracts or metadata.get('challenge_contracts', [])
 
-        print(f'- private key:        {get_player_account(mnemonic).key.hex()}')
-        print(f'- challenge contract: {challenge_address}')
+        print(f'- your private key: {get_player_account(mnemonic).key.hex()}')
+
+        for contract in challenge_contracts:
+            print(f'- {contract["name"]} contract: {contract["address"]}')

@@ -14,6 +14,7 @@ Slightly modified/refactored/fixed version of [paradigmctf.py](https://github.co
 - Refactored error handling within challenge launchers, no more sensitive info leaks
 - Fixed a few race conditions within backends
 - Moved web services to uvicorn workers(5 workers per service, editable) for better performance
+- Added possibility to deploy multiple contracts per challenge **(you must use [our forge-ctf](https://github.com/es3n1n/forge-ctf))**
 - Other improvements, fixes
 
 ### Notes

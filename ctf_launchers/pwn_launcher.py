@@ -1,11 +1,14 @@
 import os
+from typing import List
 
 import requests
 from eth_abi import abi
+from web3 import Web3
 
 from ctf_launchers.launcher import ORCHESTRATOR_HOST, Action, Launcher
 from ctf_launchers.team_provider import TeamProvider, get_team_provider
-from ctf_server.types import UserData, get_privileged_web3
+from ctf_launchers.types import ChallengeContract
+from ctf_server.types import get_privileged_web3
 
 
 FLAG = os.getenv('FLAG', 'cr3{flag}')
@@ -33,8 +36,9 @@ class PwnChallengeLauncher(Launcher):
 
         user_data = instance_body['data']
 
+        web3 = get_privileged_web3(user_data, 'main')
         if not self.is_solved(
-            user_data, user_data['metadata']['challenge_address']
+            web3, user_data['metadata']['challenge_contracts']
         ):
             print('are you sure you solved it?')
             return 0
@@ -42,16 +46,20 @@ class PwnChallengeLauncher(Launcher):
         print(FLAG)
         return 0
 
-    def is_solved(self, user_data: UserData, addr: str) -> bool:
-        web3 = get_privileged_web3(user_data, 'main')
-
+    def is_contract_solved(self, web3: Web3, contract: ChallengeContract) -> bool:
         (result,) = abi.decode(
             ['bool'],
             web3.eth.call(
                 {
-                    'to': addr,
+                    'to': contract['address'],
                     'data': web3.keccak(text='isSolved()')[:4],
                 }
             ),
         )
+
         return result
+
+    def is_solved(self, web3: Web3, contracts: List[ChallengeContract]) -> bool:
+        return not any(
+            not self.is_contract_solved(web3, contract) for contract in contracts
+        )

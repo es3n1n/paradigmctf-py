@@ -1,5 +1,5 @@
 import abc
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from ctf_server.types import UserData
 
@@ -31,5 +31,5 @@ class Database(abc.ABC):
     def get_metadata(self, instance_id: str) -> Optional[Dict[str, str]]:
         pass
 
-    def update_metadata(self, instance_id: str, metadata: Dict[str, str]):
+    def update_metadata(self, instance_id: str, metadata: Dict[str, Union[str, List[Dict[str, str]]]]):
         pass

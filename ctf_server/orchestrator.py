@@ -1,6 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
-from typing import Dict
+from typing import Dict, List, Union
 
 from fastapi import FastAPI
 
@@ -81,7 +81,7 @@ def get_instance(instance_id: str):
 
 
 @app.post('/instances/{instance_id}/metadata')
-def update_metadata(instance_id: str, metadata: Dict[str, str]):
+def update_metadata(instance_id: str, metadata: Dict[str, Union[str, List[Dict[str, str]]]]):
     try:
         database.update_metadata(instance_id, metadata)
     except:  # noqa: E722
