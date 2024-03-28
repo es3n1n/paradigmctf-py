@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -7,7 +6,8 @@ from typing import Any, Dict, List, Optional
 import aiohttp
 import websockets
 from fastapi import FastAPI, Request, WebSocket
-from websockets import WebSocketClientProtocol
+from starlette.websockets import WebSocketDisconnect
+from websockets import WebSocketException
 
 from .databases import Database
 from .loaders import load_database
@@ -148,31 +148,10 @@ async def rpc(external_id: str, anvil_id: str, request: Request):
     return await proxy_request(external_id, anvil_id, body['id'], body)
 
 
-async def forward_message(client_to_remote: bool, client_ws: WebSocket, remote_ws: WebSocketClientProtocol):
-    if client_to_remote:
-        async for message in client_ws.iter_text():
-            try:
-                json_msg = json.loads(message)
-            except json.JSONDecodeError:
-                await client_ws.send_json(jsonrpc_fail(None, -32600, 'expected json body'))
-                continue
-
-            validation = validate_request(json_msg)
-            if validation is not None:
-                await client_ws.send_json(validation)
-            else:
-                await remote_ws.send(message)
-        return
-
-    async for message in remote_ws:  # type: ignore
-        message_str: str = message
-        if isinstance(message, bytes):
-            message_str = message.decode()
-        await client_ws.send_text(message_str)
-
-
 @app.websocket('/{external_id}/{anvil_id}/ws')
 async def ws_rpc(external_id: str, anvil_id: str, client_ws: WebSocket):
+    await client_ws.accept()
+
     user_data = database.get_instance_by_external_id(external_id)
     if user_data is None:
         await client_ws.send_json(jsonrpc_fail(None, -32602, 'invalid rpc url, instance not found'))
@@ -185,14 +164,34 @@ async def ws_rpc(external_id: str, anvil_id: str, client_ws: WebSocket):
 
     instance_host = f'ws://{anvil_instance["ip"]}:{anvil_instance["port"]}'
 
-    async with websockets.connect(instance_host) as remote_ws:
-        await client_ws.accept()
-        task_a = asyncio.create_task(forward_message(True, client_ws, remote_ws))
-        task_b = asyncio.create_task(forward_message(False, client_ws, remote_ws))
+    try:
+        async with websockets.connect(instance_host) as remote_ws:
+            while True:
+                message = await client_ws.receive_text()
 
+                try:
+                    json_msg = json.loads(message)
+                except json.JSONDecodeError:
+                    await client_ws.send_json(jsonrpc_fail(None, -32600, 'expected json body'))
+                    continue
+
+                if validation := validate_request(json_msg):
+                    await client_ws.send_json(validation)
+                    continue
+
+                await remote_ws.send(message)
+
+                response = await remote_ws.recv()
+                if isinstance(response, str):
+                    response = response.encode()
+                await client_ws.send_bytes(response)
+    except (WebSocketDisconnect, WebSocketException, KeyError):  # KeyError for empty messages
+        # fixme(es3n1n, 28.03.24): ugly exception handling
         try:
-            await asyncio.wait([task_a, task_b], return_when=asyncio.FIRST_COMPLETED)
-            task_a.cancel()
-            task_b.cancel()
-        except:  # noqa: E722
+            await remote_ws.close()
+        except:  # noqa
+            pass
+        try:
+            await client_ws.close()
+        except:  # noqa
             pass
