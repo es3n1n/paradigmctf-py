@@ -18,14 +18,15 @@ from .backend import Backend
 
 class KubernetesBackend(Backend):
     def __init__(self, database: Database, kubeconfig: str) -> None:
-        super().__init__(database)
-
         if kubeconfig == 'incluster':
             config.load_incluster_config()
         else:
             config.load_kube_config(kubeconfig)
 
         self.__core_v1 = core_v1_api.CoreV1Api()
+
+        # note(es3n1n, 28.03.24): see docker backend ctor if you're wondering why we are doing this after the vars init
+        super().__init__(database)
 
     def _launch_instance_impl(self, request: CreateInstanceRequest) -> UserData:
         instance_id = request['instance_id']

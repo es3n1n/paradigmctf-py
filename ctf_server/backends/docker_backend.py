@@ -19,9 +19,12 @@ from .backend import Backend
 
 class DockerBackend(Backend):
     def __init__(self, database: Database):
-        super().__init__(database)
-
         self.__client = docker.from_env()
+
+        # note(es3n1n, 28.03.24): We are initializing base backend after the client because it would start a container
+        # prunner thread, and there could be an issue where there would be some expired instances that it will start
+        # pruning them before we even init the client, which will result in undefined __client exceptions
+        super().__init__(database)
 
     def _launch_instance_impl(self, request: CreateInstanceRequest) -> UserData:
         instance_id = request['instance_id']
