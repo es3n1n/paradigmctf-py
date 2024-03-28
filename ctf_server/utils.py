@@ -5,7 +5,7 @@ from .databases import Database, RedisDatabase, SQLiteDatabase
 
 
 def load_database() -> Database:
-    dbtype = os.getenv('DATABASE', 'sqlite')
+    dbtype = os.getenv('DATABASE', 'redis')
     if dbtype == 'sqlite':
         dbpath = os.getenv('SQLITE_PATH', ':memory:')
         return SQLiteDatabase(dbpath)
