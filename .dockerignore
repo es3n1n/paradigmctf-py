@@ -3,3 +3,5 @@
 dev-requirements.txt
 setup.cfg
 *.lock
+venv/**
+.idea/**
