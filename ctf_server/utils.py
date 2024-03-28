@@ -1,27 +1,23 @@
-import os
+from typing import Optional
 
-from .backends import Backend, DockerBackend, KubernetesBackend
-from .databases import Database, RedisDatabase, SQLiteDatabase
-
-
-def load_database() -> Database:
-    dbtype = os.getenv('DATABASE', 'redis')
-    if dbtype == 'sqlite':
-        dbpath = os.getenv('SQLITE_PATH', ':memory:')
-        return SQLiteDatabase(dbpath)
-    elif dbtype == 'redis':
-        url = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')
-        return RedisDatabase(url)
-
-    raise Exception('invalid database type', dbtype)
+from filelock import FileLock, Timeout
 
 
-def load_backend(database: Database) -> Backend:
-    backend_type = os.getenv('BACKEND', 'docker')
-    if backend_type == 'docker':
-        return DockerBackend(database=database)
-    elif backend_type == 'kubernetes':
-        config_file = os.getenv('KUBECONFIG', 'incluster')
-        return KubernetesBackend(database, config_file)
+class Worker:
+    def __init__(self) -> None:
+        self.lock: Optional[FileLock] = None
 
-    raise Exception('invalid backend type', backend_type)
+    def setup(self, service_name: str) -> None:
+        self.lock = FileLock(f'worker-{service_name}.lock')
+        try:
+            self.lock.acquire(blocking=False)
+        except Timeout:
+            pass
+
+    @property
+    def is_first(self) -> bool:
+        assert self.lock is not None
+        return self.lock.is_locked
+
+
+worker = Worker()

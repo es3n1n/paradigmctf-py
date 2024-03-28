@@ -21,6 +21,7 @@ from ctf_server.types import (
     LaunchAnvilInstanceArgs,
     UserData,
 )
+from ctf_server.utils import worker
 from foundry.anvil import anvil_setBalance
 
 
@@ -32,11 +33,13 @@ class Backend(abc.ABC):
     def __init__(self, database: Database):
         self._database = database
 
-        Thread(
-            target=self.__instance_pruner_thread,
-            name=f'{self.__class__.__name__} Anvil Pruner',
-            daemon=True,
-        ).start()
+        # We only want to run this thread for a single worker
+        if worker.is_first:
+            Thread(
+                target=self.__instance_pruner_thread,
+                name=f'{self.__class__.__name__} Anvil Pruner',
+                daemon=True,
+            ).start()
 
     def __instance_pruner_thread(self):
         while True:

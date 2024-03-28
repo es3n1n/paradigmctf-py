@@ -9,10 +9,8 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1Pod
 from web3 import Web3
 
-from ctf_server.databases.database import Database
-from ctf_server.types import DEFAULT_IMAGE, CreateInstanceRequest, UserData, format_anvil_args
-
-from ..types import InstanceInfo
+from ..databases.database import Database
+from ..types import DEFAULT_IMAGE, CreateInstanceRequest, InstanceInfo, UserData, format_anvil_args
 from .backend import Backend
 
 

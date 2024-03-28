@@ -14,6 +14,7 @@ setup(
         'fastapi==0.110.0',
         'docker==6.1.3',
         'pwntools==4.11.0',
+        'filelock==3.13.3',
     ],
     py_modules=['foundry', 'ctf_server', 'ctf_launchers', 'ctf_solvers'],
 )

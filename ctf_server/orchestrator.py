@@ -7,8 +7,9 @@ from fastapi import FastAPI
 from .backends import Backend
 from .backends.backend import InstanceExists
 from .databases import Database
+from .loaders import load_backend, load_database
 from .types import CreateInstanceRequest
-from .utils import load_backend, load_database
+from .utils import worker
 
 
 # note(es3n1n, 27.03.24): HACK: mypy won't know that we will initialize these within the lifespan
@@ -19,6 +20,9 @@ backend: Backend = None  # type: ignore
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global database, backend
+
+    worker.setup('orchestrator')
+
     database = load_database()
     backend = load_backend(database)
 

@@ -4,3 +4,4 @@ build/
 venv/
 .idea/**
 .mypy_cache/**
+*.lock

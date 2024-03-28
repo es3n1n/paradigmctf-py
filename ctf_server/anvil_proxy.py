@@ -10,7 +10,8 @@ from fastapi import FastAPI, Request, WebSocket
 from websockets import WebSocketClientProtocol
 
 from .databases import Database
-from .utils import load_database
+from .loaders import load_database
+from .utils import worker
 
 
 ALLOWED_NAMESPACES = ['web3', 'eth', 'net']
@@ -32,6 +33,9 @@ database: Database = None  # type: ignore
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global session, database
+
+    worker.setup('anvil_proxy')
+
     session = aiohttp.ClientSession()
     database = load_database()
 
