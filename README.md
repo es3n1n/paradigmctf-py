@@ -4,7 +4,17 @@ Slightly modified/refactored/fixed version of [paradigmctf.py](https://github.co
 
 ### Docker hub
 
-`es3n1n/paradigmctf.py:latest`
+[`es3n1n/paradigmctf.py:latest`](https://hub.docker.com/repository/docker/es3n1n/paradigmctf.py/general)
+
+### What's changed
+
+- Fixed instance deletion
+- A lot of refactoring for PEP8 (mypy, flake8 now produces zero errors)
+- Added print instance option for the challenge launchers
+- Refactored error handling within challenge launchers, no more sensitive info leaks
+- Fixed a few race conditions within backends
+- Moved web services to uvicorn workers(5 workers per service, editable) for better performance
+- Other improvements, fixes
 
 ### Notes
 
