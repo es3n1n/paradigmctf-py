@@ -58,6 +58,11 @@ def jsonrpc_fail(id: Any, code: int, message: str) -> dict[str, str | dict[str, 
     }
 
 
+@app.api_route('/', methods=['GET', 'POST'])
+async def root():
+    return jsonrpc_fail(None, -32600, 'Please use the full node url')
+
+
 def validate_request(request: Any) -> Optional[Dict]:
     if not isinstance(request, dict):
         return jsonrpc_fail(None, -32600, 'expected json object')
