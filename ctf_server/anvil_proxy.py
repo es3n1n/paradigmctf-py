@@ -44,12 +44,7 @@ async def lifespan(app: FastAPI):
     await session.close()
 
 
-app = FastAPI(lifespan=lifespan)
-
-
-@app.get('/')
-async def root():
-    return 'rpc proxy running'
+app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
 
 def jsonrpc_fail(id: Any, code: int, message: str) -> dict[str, str | dict[str, str | int] | Any]:
