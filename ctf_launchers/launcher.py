@@ -45,6 +45,8 @@ class Launcher(abc.ABC):
     def __init__(
             self, project_location: str, provider: TeamProvider, actions: List[Action] = []
     ):
+        self.mnemonic: Optional[str] = None
+        self.team: Optional[str] = None
         self.project_location = project_location
         self.__team_provider = provider
 
@@ -79,6 +81,8 @@ class Launcher(abc.ABC):
             traceback.print_exc()
             print('an internal error occurred, contact admins')
             exit(1)
+        finally:
+            exit(0)  # should never happen, but just in case
 
     def get_anvil_instances(self) -> Dict[str, LaunchAnvilInstanceArgs]:
         return {

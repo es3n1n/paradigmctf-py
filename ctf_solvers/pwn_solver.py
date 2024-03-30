@@ -2,8 +2,10 @@ import abc
 
 from web3 import Web3
 
-from ctf_solvers.solver import TicketedRemote, kill_instance, launch_instance
+from ctf_solvers.solver import kill_instance, launch_instance, get_pwn_flag
 from ctf_solvers.utils import solve
+from ctf_solvers.types import ChallengeInstanceInfo
+from pprint import pprint
 
 
 class PwnChallengeSolver(abc.ABC):
@@ -11,25 +13,19 @@ class PwnChallengeSolver(abc.ABC):
         kill_instance()
 
         data = launch_instance()
-        private_key = '0x' + hex(data['private key'])[2:].ljust(64, '0')
-        challenge = Web3.to_checksum_address(
-            '0x' + hex(data['challenge contract'])[2:].ljust(40, '0')
-        )
 
-        print('[+] solving challenge')
-        print(f'[+] rpc endpoints: {data["rpc endpoints"]}')
-        print(f'[+] private key: {private_key}')
-        print(f'[+] challenge: {challenge}')
+        print('[+] instance:', flush=True)
+        pprint(data)
+        print('', end='', flush=True)
 
-        self._solve(data['rpc endpoints'], private_key, challenge)
+        self._solve(data)
 
-        with TicketedRemote() as r:
-            r.recvuntil(b'?')
-            r.send(b'3\n')
-            data = r.recvall().decode('utf8').strip()
+        flag = get_pwn_flag()
+        print('[+] flag:', flag, flush=True)
 
-        print(f'[+] response: {data}')
+        exit(0 if flag else 1)
 
-    def _solve(self, rpcs, player, challenge):
-        web3 = Web3(Web3.HTTPProvider(rpcs[0]))
-        solve(web3, 'project', player, challenge, 'script/Solve.s.sol:Solve')
+    def _solve(self, data: ChallengeInstanceInfo):
+        web3 = Web3(Web3.HTTPProvider(data['http_endpoint']))
+        contract = data['contracts'][list(data['contracts'].keys())[0]]
+        solve(web3, 'project', data['private_key'], contract, 'script/Solve.s.sol:Solve')
