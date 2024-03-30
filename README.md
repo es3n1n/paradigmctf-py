@@ -16,8 +16,9 @@ Slightly modified/refactored/fixed version of [paradigmctf.py](https://github.co
 - Moved web services to uvicorn workers(5 workers per service, editable) for better performance
 - Added possibility to deploy multiple contracts per challenge **(you must use [our forge-ctf](https://github.com/es3n1n/forge-ctf))**
 - Completely rewrote websocket anvil proxy, now it preserves connection
+- Some parts of solvers were rewritten; I bet it doesn't even work with k8s(PR welcome)
 - Other improvements, fixes
 
 ### Notes
 
-- I never really tested solvers/koth challenges/sqlite db, so please create an issue if something's up with them 
+- I never really tested koth challs/koth solvers/sqlite db, so please create an issue if something's up with them 
