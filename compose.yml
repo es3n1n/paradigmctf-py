@@ -16,7 +16,7 @@ services:
       - database:/data
   ctf-server-orchestrator:
     container_name: blockchain-infra-orchestrator
-    image: gcr.io/paradigmxyz/infra/paradigmctf.py:latest
+    image: es3n1n/paradigmctf.py:latest
     build: .
     user: root
     command: uvicorn ctf_server:orchestrator --host 0.0.0.0 --port 7283 --workers 5
@@ -36,7 +36,7 @@ services:
       - database
   ctf-server-anvil-proxy:
     container_name: blockchain-infra-anvil-proxy
-    image: gcr.io/paradigmxyz/infra/paradigmctf.py:latest
+    image: es3n1n/paradigmctf.py:latest
     build: .
     command: uvicorn ctf_server:anvil_proxy --host 0.0.0.0 --port 8545 --workers 5
     ports:
