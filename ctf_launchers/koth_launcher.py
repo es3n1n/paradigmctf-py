@@ -45,6 +45,7 @@ class KothChallengeLauncher(Launcher):
         for metadata in self.__want_metadata:
             data[metadata] = user_data['metadata'][metadata]
 
+        assert self.team is not None
         self.__score_submitter.submit_score(self.team, data, score)
 
         return 0

@@ -1,9 +1,8 @@
 import os
 from sys import stderr
-from typing import Dict
-from typing import Optional
+from typing import Dict, Optional
 
-from pwn import remote, context
+from pwn import context, remote
 
 from ctf_solvers.types import ChallengeInstanceInfo
 

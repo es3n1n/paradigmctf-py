@@ -13,6 +13,7 @@ from ctf_launchers.team_provider import TeamProvider
 from ctf_launchers.types import ChallengeContract
 from ctf_launchers.utils import http_url_to_ws
 from ctf_server.types import (
+    DEFAULT_MNEMONIC,
     CreateInstanceRequest,
     DaemonInstanceArgs,
     LaunchAnvilInstanceArgs,
@@ -45,7 +46,7 @@ class Launcher(abc.ABC):
     def __init__(
             self, project_location: str, provider: TeamProvider, actions: List[Action] = []
     ):
-        self.mnemonic: Optional[str] = None
+        self.mnemonic: str = DEFAULT_MNEMONIC
         self.team: Optional[str] = None
         self.project_location = project_location
         self.__team_provider = provider

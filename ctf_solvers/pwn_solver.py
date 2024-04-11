@@ -1,11 +1,11 @@
 import abc
+from pprint import pprint
 
 from web3 import Web3
 
-from ctf_solvers.solver import kill_instance, launch_instance, get_pwn_flag
-from ctf_solvers.utils import solve
+from ctf_solvers.solver import get_pwn_flag, kill_instance, launch_instance
 from ctf_solvers.types import ChallengeInstanceInfo
-from pprint import pprint
+from ctf_solvers.utils import solve
 
 
 class PwnChallengeSolver(abc.ABC):

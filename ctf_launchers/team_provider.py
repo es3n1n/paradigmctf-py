@@ -1,9 +1,13 @@
 import abc
 import os
 from dataclasses import dataclass
+from os import environ
 from typing import Optional
 
 import requests
+
+
+CTFD_URL: str = environ.get('CTFD_URL', 'https://cr3c.tf/').rstrip('/')
 
 
 class TeamProvider(abc.ABC):
@@ -49,6 +53,33 @@ class TicketTeamProvider(TeamProvider):
         )
 
 
+class CTFdTeamProvider(TeamProvider):
+    def __init__(self):
+        pass
+
+    def get_team(self) -> Optional[str]:
+        team = self.get_team_by_ctfd_token(input(f'token? you can get one at {CTFD_URL}/settings'))
+        if not team:
+            print('invalid token!')
+            return None
+
+        return str(team)
+
+    def get_team_by_ctfd_token(self, ctfd_token: str) -> Optional[int]:
+        user_info = requests.get(
+            f'{CTFD_URL}/api/v1/users/me',
+            headers={
+                'User-Agent': 'paradigmctf.py',
+                'Authorization': f'Token {ctfd_token}',
+                'Content-Type': 'application/json',
+            }
+        ).json()
+        if not user_info['success'] or 'data' not in user_info or 'team_id' not in user_info['data']:
+            return None
+
+        return user_info['data']['team_id']
+
+
 class StaticTeamProvider(TeamProvider):
     def __init__(self, team_id, ticket):
         self.__team_id = team_id
@@ -78,5 +109,7 @@ def get_team_provider() -> TeamProvider:
         return LocalTeamProvider(team_id='local')
     elif env == 'dev':
         return StaticTeamProvider(team_id='dev', ticket='dev2023')
+    elif env == 'ctfd':
+        return CTFdTeamProvider()
     else:
         return TicketTeamProvider(challenge_id=os.getenv('CHALLENGE_ID'))
