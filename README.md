@@ -17,6 +17,7 @@ Slightly modified/refactored/fixed version of [paradigmctf.py](https://github.co
 - Added possibility to deploy multiple contracts per challenge **(you must use [our forge-ctf](https://github.com/es3n1n/forge-ctf))**
 - Completely rewrote websocket anvil proxy, now it preserves connection
 - Some parts of solvers were rewritten; I bet it doesn't even work with k8s(PR welcome)
+- Added CTFd integration
 - Other improvements, fixes
 
 ### Notes
