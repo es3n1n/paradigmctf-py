@@ -19,7 +19,7 @@ services:
     image: es3n1n/paradigmctf.py:latest
     build: .
     user: root
-    command: uvicorn ctf_server:orchestrator --host 0.0.0.0 --port 7283 --workers 5
+    command: uvicorn ctf_server:orchestrator --host 0.0.0.0 --port 7283 --workers 3
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     ports:
@@ -38,7 +38,7 @@ services:
     container_name: blockchain-infra-anvil-proxy
     image: es3n1n/paradigmctf.py:latest
     build: .
-    command: uvicorn ctf_server:anvil_proxy --host 0.0.0.0 --port 8545 --workers 5
+    command: uvicorn ctf_server:anvil_proxy --host 0.0.0.0 --port 8545 --workers 3
     ports:
       - "8545:8545"
     environment:
