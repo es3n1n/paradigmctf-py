@@ -1,6 +1,7 @@
 name: blockchain-infra
 services:
   database:
+    restart: always
     container_name: blockchain-infra-database
     image: redis/redis-stack:latest
     ports:
@@ -15,6 +16,7 @@ services:
     volumes: 
       - database:/data
   ctf-server-orchestrator:
+    restart: unless-stopped
     container_name: blockchain-infra-orchestrator
     image: es3n1n/paradigmctf.py:latest
     build: .
@@ -35,6 +37,7 @@ services:
     depends_on:
       - database
   ctf-server-anvil-proxy:
+    restart: unless-stopped
     container_name: blockchain-infra-anvil-proxy
     image: es3n1n/paradigmctf.py:latest
     build: .
