@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 import aiohttp
 import websockets
 from fastapi import FastAPI, Request, WebSocket
+from starlette.exceptions import HTTPException
+from starlette.responses import JSONResponse
 from starlette.websockets import WebSocketDisconnect
 from websockets import WebSocketException
 
@@ -56,6 +58,11 @@ def jsonrpc_fail(id: Any, code: int, message: str) -> dict[str, str | dict[str, 
             'message': message,
         },
     }
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(jsonrpc_fail(None, -32600, exc.detail), status_code=exc.status_code)
 
 
 @app.api_route('/', methods=['GET', 'POST'])
