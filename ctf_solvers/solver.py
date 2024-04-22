@@ -15,7 +15,8 @@ class TicketedRemote:
             self.__r = remote('challenge', 1337)
 
         data = self.__r.recvuntil(b'?')
-        if 'ticket' not in data.decode():
+        data_str = data.decode()
+        if 'ticket' not in data_str and 'token' not in data_str:
             self.__r.unrecv(data)
             return self.__r
 
