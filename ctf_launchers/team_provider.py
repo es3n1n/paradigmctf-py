@@ -77,7 +77,7 @@ class CTFdTeamProvider(TeamProvider):
         ).json()
         if 'success' not in user_info or not user_info['success'] or 'data' not in user_info:
             return None
-        if not isinstance(user_info['data'], dict) or 'user_info' not in user_info['data']:
+        if not isinstance(user_info['data'], dict) or 'team_id' not in user_info['data']:
             return None
 
         team_id: int = user_info['data']['team_id']
