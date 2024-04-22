@@ -7,7 +7,8 @@ from typing import Optional
 import requests
 
 
-CTFD_URL: str = environ.get('CTFD_URL', 'https://cr3c.tf/').rstrip('/')
+CTFD_PUBLIC_URL: str = environ.get('CTFD_PUBLIC_URL', 'https://cr3c.tf/').rstrip('/')
+CTFD_INTERNAL_URL: str = environ.get('CTFD_PUBLIC_URL', 'https://cr3c.tf/').rstrip('/')
 
 
 class TeamProvider(abc.ABC):
@@ -58,7 +59,7 @@ class CTFdTeamProvider(TeamProvider):
         pass
 
     def get_team(self) -> Optional[str]:
-        team = self.get_team_by_ctfd_token(input(f'token? you can get one at {CTFD_URL}/settings'))
+        team = self.get_team_by_ctfd_token(input(f'token? you can get one at {CTFD_PUBLIC_URL}/settings'))
         if not team:
             print('invalid token!')
             return None
@@ -67,7 +68,7 @@ class CTFdTeamProvider(TeamProvider):
 
     def get_team_by_ctfd_token(self, ctfd_token: str) -> Optional[int]:
         user_info = requests.get(
-            f'{CTFD_URL}/api/v1/users/me',
+            f'{CTFD_INTERNAL_URL}/api/v1/users/me',
             headers={
                 'User-Agent': 'paradigmctf.py',
                 'Authorization': f'Token {ctfd_token}',
