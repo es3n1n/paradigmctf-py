@@ -8,7 +8,7 @@ import requests
 
 
 CTFD_PUBLIC_URL: str = environ.get('CTFD_PUBLIC_URL', 'https://cr3c.tf/').rstrip('/')
-CTFD_INTERNAL_URL: str = environ.get('CTFD_PUBLIC_URL', 'https://cr3c.tf/').rstrip('/')
+CTFD_INTERNAL_URL: str = environ.get('CTFD_INTERNAL_URL', 'https://cr3c.tf/').rstrip('/')
 
 
 class TeamProvider(abc.ABC):
@@ -59,7 +59,7 @@ class CTFdTeamProvider(TeamProvider):
         pass
 
     def get_team(self) -> Optional[str]:
-        team = self.get_team_by_ctfd_token(input(f'token? you can get one at {CTFD_PUBLIC_URL}/settings'))
+        team = self.get_team_by_ctfd_token(input(f'token? you can get one at {CTFD_PUBLIC_URL}/settings '))
         if not team:
             print('invalid token!')
             return None
@@ -75,10 +75,17 @@ class CTFdTeamProvider(TeamProvider):
                 'Content-Type': 'application/json',
             }
         ).json()
-        if not user_info['success'] or 'data' not in user_info or 'team_id' not in user_info['data']:
+        if 'success' not in user_info or not user_info['success'] or 'data' not in user_info:
+            return None
+        if not isinstance(user_info['data'], dict) or 'user_info' not in user_info['data']:
             return None
 
-        return user_info['data']['team_id']
+        team_id: int = user_info['data']['team_id']
+        if not isinstance(team_id, int):
+            return None
+
+        print(f'nice, authorized as team with id {team_id}')
+        return team_id
 
 
 class StaticTeamProvider(TeamProvider):
