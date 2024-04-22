@@ -1,6 +1,7 @@
 import os
 from sys import stderr
 from typing import Dict, Optional
+from urllib.parse import urlparse
 
 from pwn import context, remote
 
@@ -42,7 +43,8 @@ def get_pwn_flag() -> Optional[str]:
 
 
 def _sanitize_rpc_url(url: str) -> str:
-    return url.replace('127.0.0.1', 'ctf-server-anvil-proxy')
+    url_info = urlparse(url)
+    return f'http://ctf-server-anvil-proxy:8545/{url_info.path.lstrip("/")}'
 
 
 def launch_instance() -> ChallengeInstanceInfo:
