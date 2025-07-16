@@ -1,6 +1,5 @@
 import os
-from sys import stderr
-from typing import Dict, Optional
+from types import TracebackType
 from urllib.parse import urlparse
 
 from pwn import context, remote
@@ -23,7 +22,9 @@ class TicketedRemote:
         self.__r.sendline(os.getenv('TICKET', '').encode('utf8'))
         return self.__r
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self, type_: type[BaseException] | None, value: BaseException | None, traceback: TracebackType | None
+    ) -> None:
         with context.quiet:
             self.__r.close()
 
@@ -35,7 +36,7 @@ def kill_instance() -> None:
             r.recvall()
 
 
-def get_pwn_flag() -> Optional[str]:
+def get_pwn_flag() -> str | None:
     with TicketedRemote() as r:
         r.sendlineafter(b'?', b'4')
         flag = r.recvline().decode().strip()
@@ -51,30 +52,24 @@ def _sanitize_rpc_url(url: str) -> str:
 def launch_instance() -> ChallengeInstanceInfo:
     with TicketedRemote() as r:
         r.sendlineafter(b'?', b'1')
-        try:
-            r.recvuntil(b'- rpc endpoints:\n')
-        except:  # noqa
-            log = r.recvall().decode('utf8')
-            print(log, file=stderr)
-            raise Exception('failed to create instance')
+        r.recvuntil(b'- rpc endpoints:\n')
 
     http_endpoint = r.recvline().decode().split('- ')[1].strip()
     ws_endpoint = r.recvline().decode().split('- ')[1].strip()
     r.recvuntil(b'private key: ')
     private_key = r.recvline().decode().strip()
 
-    contracts: Dict[str, str] = {}
+    contracts: dict[str, str] = {}
     while True:
         try:
-            line = r.recvline().decode()[2:]  # skip `- `
-        except:  # noqa
+            line = r.recvline().decode()[2:]
+        except EOFError:
             break
-
         contracts[line.split(' contract')[0]] = line.split(':')[1].strip()
 
     return {
         'http_endpoint': _sanitize_rpc_url(http_endpoint),
         'ws_endpoint': _sanitize_rpc_url(ws_endpoint),
         'private_key': private_key,
-        'contracts': contracts
+        'contracts': contracts,
     }

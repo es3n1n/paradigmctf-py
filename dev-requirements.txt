@@ -1,9 +1,0 @@
--r requirements.txt
-uvicorn==0.24.0.post1
-flake8==7.0.0
-flake8-quotes==3.4.0
-isort==5.13.2
-mypy==1.9.0
-types-PyYAML==6.0.12.20240311
-types-requests==2.31.0.6
-git+https://github.com/rdozier-work/docker-stubs.git@9de7906804ae912f1d644c97b617ac77e784fca8

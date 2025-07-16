@@ -1,22 +1,21 @@
-from typing import Optional
+import contextlib
 
 from filelock import FileLock, Timeout
 
 
 class Worker:
     def __init__(self) -> None:
-        self.lock: Optional[FileLock] = None
+        self.lock: FileLock | None = None
 
     def setup(self, service_name: str) -> None:
         self.lock = FileLock(f'worker-{service_name}.lock')
-        try:
+        with contextlib.suppress(Timeout):
             self.lock.acquire(blocking=False)
-        except Timeout:
-            pass
 
     @property
     def is_first(self) -> bool:
-        assert self.lock is not None
+        if self.lock is None:
+            return False
         return self.lock.is_locked
 
 

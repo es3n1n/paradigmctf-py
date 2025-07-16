@@ -4,6 +4,10 @@ import subprocess
 from web3 import Web3
 
 
+class ForgeFailedError(Exception):
+    """Exception raised when the forge command fails to execute."""
+
+
 def solve(
     web3: Web3,
     project_location: str,
@@ -20,7 +24,7 @@ def solve(
             forge_location,
             'script',
             '--rpc-url',
-            web3.provider.endpoint_uri,  # type: ignore
+            web3.provider.endpoint_uri,  # type: ignore[attr-defined]
             '--slow',
             '-vvvvv',
             '--broadcast',
@@ -38,8 +42,7 @@ def solve(
         stderr=subprocess.PIPE,
     )
     stdout, stderr = proc.communicate()
-    print(stdout)
-    print(stderr)
 
     if proc.returncode != 0:
-        raise Exception('forge failed to run')
+        msg = f'forge failed to run: {stdout!r}, {stderr!r}'
+        raise ForgeFailedError(msg)

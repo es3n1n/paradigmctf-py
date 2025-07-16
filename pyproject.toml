@@ -1,0 +1,58 @@
+[project]
+name = "paradigmctf.py"
+description = "paradigmctf.py"
+authors = [
+    {name = "es3n1n"}
+]
+license = "MIT"
+requires-python = ">=3.13"
+version = "1.0.0"
+dependencies = [
+    "docker>=7.1.0",
+    "fastapi>=0.116.1",
+    "filelock>=3.18.0",
+    "kubernetes>=33.1.0",
+    "loguru>=0.7.3",
+    "pwntools>=4.14.1",
+    "redis>=6.2.0",
+    "web3>=7.12.1",
+]
+
+[dependency-groups]
+dev = [
+    "docker-stubs",
+    "mypy>=1.17.0",
+    "ruff>=0.12.3",
+    "types-pyyaml>=6.0.12.20250516",
+    "types-requests>=2.32.4.20250611",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812", "ISC001", "W391", "D",
+    "FIX001", "FIX002", "TD003", "S104",
+    "TD001",
+    # This is temporary:
+    "BLE001",
+]
+flake8-quotes.inline-quotes = "single"
+
+[tool.ruff.format]
+quote-style = "single"
+line-ending = "lf"
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+combine-as-imports = false
+
+[[tool.mypy.overrides]]
+module = "pwn.*,kubernetes.*"
+ignore_missing_imports = true
+
+[tool.uv.sources]
+docker-stubs = { git = "https://github.com/rdozier-work/docker-stubs.git", rev = "13b1630f188feade7503ed7deb9f4267d2c9090c" }

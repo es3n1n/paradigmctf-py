@@ -1,7 +1,7 @@
 import os
 import subprocess
 from dataclasses import dataclass
-from typing import Dict, List, NotRequired, Optional
+from typing import NotRequired
 
 from eth_account import Account
 from eth_account.account import LocalAccount
@@ -20,21 +20,21 @@ PUBLIC_HOST = os.getenv('PUBLIC_HOST', 'http://127.0.0.1:8545')
 
 
 class LaunchAnvilInstanceArgs(TypedDict):
-    image: NotRequired[Optional[str]]
-    accounts: NotRequired[Optional[int]]
-    balance: NotRequired[Optional[float]]
-    derivation_path: NotRequired[Optional[str]]
-    mnemonic: NotRequired[Optional[str]]
-    fork_url: NotRequired[Optional[str]]
-    fork_block_num: NotRequired[Optional[int]]
-    fork_chain_id: NotRequired[Optional[int]]
-    no_rate_limit: NotRequired[Optional[bool]]
-    chain_id: NotRequired[Optional[int]]
-    code_size_limit: NotRequired[Optional[int]]
-    block_time: NotRequired[Optional[int]]
+    image: NotRequired[str | None]
+    accounts: NotRequired[int | None]
+    balance: NotRequired[float | None]
+    derivation_path: NotRequired[str | None]
+    mnemonic: NotRequired[str | None]
+    fork_url: NotRequired[str | None]
+    fork_block_num: NotRequired[int | None]
+    fork_chain_id: NotRequired[int | None]
+    no_rate_limit: NotRequired[bool | None]
+    chain_id: NotRequired[int | None]
+    code_size_limit: NotRequired[int | None]
+    block_time: NotRequired[int | None]
 
 
-def format_anvil_args(args: LaunchAnvilInstanceArgs, anvil_id: str, port: int = 8545) -> List[str]:
+def format_anvil_args(args: LaunchAnvilInstanceArgs, anvil_id: str, port: int = 8545) -> list[str]:
     cmd_args = []
     cmd_args += ['--host', '0.0.0.0']
     cmd_args += ['--port', str(port)]
@@ -51,7 +51,7 @@ def format_anvil_args(args: LaunchAnvilInstanceArgs, anvil_id: str, port: int = 
     if args.get('fork_block_num') is not None:
         cmd_args += ['--fork-block-number', str(args['fork_block_num'])]
 
-    if args.get('no_rate_limit') is True:
+    if args.get('no_rate_limit'):
         cmd_args += ['--no-rate-limit']
 
     if args.get('chain_id') is not None:
@@ -73,8 +73,8 @@ class DaemonInstanceArgs(TypedDict):
 class CreateInstanceRequest(TypedDict):
     instance_id: str
     timeout: int
-    anvil_instances: NotRequired[Dict[str, LaunchAnvilInstanceArgs]]
-    daemon_instances: NotRequired[Dict[str, DaemonInstanceArgs]]
+    anvil_instances: NotRequired[dict[str, LaunchAnvilInstanceArgs]]
+    daemon_instances: NotRequired[dict[str, DaemonInstanceArgs]]
 
 
 class InstanceInfo(TypedDict):
@@ -97,36 +97,9 @@ class UserData(TypedDict):
     external_id: str
     created_at: float
     expires_at: float
-    # launch_args: Dict[str, LaunchAnvilInstanceArgs]
-    anvil_instances: Dict[str, InstanceInfo]
-    daemon_instances: Dict[str, InstanceInfo]
-    metadata: Dict
-
-    # def get_privileged_account(self, offset: int) -> LocalAccount:
-    #     seed = seed_from_mnemonic(self.mnemonic, '')
-    #     private_key = key_from_seed(seed, f'm/44'/60'/0'/0/{offset}')
-
-    #     return Account.from_key(private_key)
-
-    # def get_player_account(self) -> LocalAccount:
-    #     return self.get_privileged_account(0)
-
-    # def get_system_account(self) -> LocalAccount:
-    #     return self.get_privileged_account(1)
-
-    # def get_additional_account(self, offset: int) -> LocalAccount:
-    #     return self.get_privileged_account(offset + 2)
-
-    # def get_privileged_web3(self, id: str) -> Web3:
-    #     return Web3(Web3.HTTPProvider(f'http://127.0.0.1:{self.instances[id].port}'))
-
-    # def get_unprivileged_web3(self, id: str) -> Web3:
-    #     return Web3(
-    #         Web3.HTTPProvider(
-    #             f'http://127.0.0.1:8545/{self.internal_id}/{id}',
-    #             request_kwargs={'timeout': 60},
-    #         )
-    #     )
+    anvil_instances: dict[str, InstanceInfo]
+    daemon_instances: dict[str, InstanceInfo]
+    metadata: dict
 
 
 def get_account(mnemonic: str, offset: int) -> LocalAccount:
@@ -150,14 +123,8 @@ def get_additional_account(mnemonic: str, offset: int) -> LocalAccount:
 
 def get_privileged_web3(user_data: UserData, anvil_id: str) -> Web3:
     anvil_instance = user_data['anvil_instances'][anvil_id]
-    return Web3(
-        Web3.HTTPProvider(f'http://{anvil_instance["ip"]}:{anvil_instance["port"]}')
-    )
+    return Web3(Web3.HTTPProvider(f'http://{anvil_instance["ip"]}:{anvil_instance["port"]}'))
 
 
 def get_unprivileged_web3(user_data: UserData, anvil_id: str) -> Web3:
-    return Web3(
-        Web3.HTTPProvider(
-            f'http://anvil-proxy:8545/{user_data["external_id"]}/{anvil_id}'
-        )
-    )
+    return Web3(Web3.HTTPProvider(f'http://anvil-proxy:8545/{user_data["external_id"]}/{anvil_id}'))
