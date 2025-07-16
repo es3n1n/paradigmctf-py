@@ -93,15 +93,21 @@ def get_instance_info(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> Cha
         except EOFError as err:
             msg = 'Failed to get instance info, perhaps its not running.'
             raise SolverError(msg) from err
-    return _recv_instance(r)
+        return _recv_instance(r)
 
 
-def launch_instance(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> ChallengeInstanceInfo:
+def launch_instance(
+    host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, *, get_if_running: bool = True
+) -> ChallengeInstanceInfo:
     with TicketedRemote(host, port) as r:
         r.sendlineafter(b'?', b'1')
         try:
             r.recvuntil(b'- rpc endpoints:\n')
-        except EOFError:
+        except EOFError as err:
             # Probably already running
-            return get_instance_info(host, port)
-    return _recv_instance(r)
+            if get_if_running:
+                return get_instance_info(host, port)
+
+            err_msg = 'Failed to get instance info, perhaps its already running.'
+            raise SolverError(err_msg) from err
+        return _recv_instance(r)
