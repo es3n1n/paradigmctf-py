@@ -45,10 +45,12 @@ class RemoteScoreSubmitter(ScoreSubmitter):
             msg = f'failed to submit score: {resp["message"]}'
             raise ScoreSubmitterError(msg)
 
+        print(f'score successfully submitted (id={resp["id"]})')
+
 
 class LocalScoreSubmitter(ScoreSubmitter):
     def submit_score(self, team_id: str, data: ScoreData, score: int) -> None:
-        pass
+        print(f'submitted score for team {team_id}: {score} {data}')
 
 
 def get_score_submitter() -> ScoreSubmitter:

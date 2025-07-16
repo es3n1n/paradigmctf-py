@@ -11,15 +11,30 @@ dependencies = [
     "docker>=7.1.0",
     "fastapi>=0.116.1",
     "filelock>=3.18.0",
+    "hatchling>=1.24",
     "kubernetes>=33.1.0",
     "loguru>=0.7.3",
     "pwntools>=4.14.1",
     "redis>=6.2.0",
-    "web3>=7.12.1",
+    "uvicorn>=0.35.0",
+    "web3>=7.5.0",  # latest version supported by cheb3 as of 2025-07-16
+]
+
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+packages = [
+    "ctf_launchers",
+    "ctf_server",
+    "ctf_solvers",
+    "foundry",
 ]
 
 [dependency-groups]
 dev = [
+    "cheb3",
     "docker-stubs",
     "mypy>=1.17.0",
     "ruff>=0.12.3",
@@ -27,16 +42,21 @@ dev = [
     "types-requests>=2.32.4.20250611",
 ]
 
+[tool.uv.sources]
+docker-stubs = { git = "https://github.com/rdozier-work/docker-stubs.git", rev = "13b1630f188feade7503ed7deb9f4267d2c9090c" }
+cheb3 = { git = "https://github.com/YanhuiJessica/cheb3.git", rev = "458f63212a921b831b35175a5000b27228fb42e5" }
+
 [tool.ruff]
 target-version = "py313"
 line-length = 120
+extend-exclude = ["examples"]
 
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
     "COM812", "ISC001", "W391", "D",
     "FIX001", "FIX002", "TD003", "S104",
-    "TD001",
+    "TD001", "T201", "T203",
     # This is temporary:
     "BLE001",
 ]
@@ -50,9 +70,9 @@ line-ending = "lf"
 lines-after-imports = 2
 combine-as-imports = false
 
+[tool.mypy]
+exclude = '(?x)(examples/*)'
+
 [[tool.mypy.overrides]]
 module = "pwn.*,kubernetes.*"
 ignore_missing_imports = true
-
-[tool.uv.sources]
-docker-stubs = { git = "https://github.com/rdozier-work/docker-stubs.git", rev = "13b1630f188feade7503ed7deb9f4267d2c9090c" }

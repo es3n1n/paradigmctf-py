@@ -1,9 +1,9 @@
-import abc
 import os
 import sys
 import traceback
 from collections.abc import Callable
 from dataclasses import dataclass
+from time import time
 
 import requests
 from eth_account.hdaccount import generate_mnemonic
@@ -18,6 +18,7 @@ from ctf_server.types import (
     DaemonInstanceArgs,
     LaunchAnvilInstanceArgs,
     UserData,
+    get_player_account,
     get_privileged_web3,
 )
 
@@ -41,7 +42,7 @@ class NonSensitiveError(Exception):
     pass
 
 
-class Launcher(abc.ABC):
+class Launcher:
     def __init__(self, project_location: str, provider: TeamProvider, actions: list[Action] | None = None) -> None:
         if actions is None:
             actions = []
@@ -63,8 +64,8 @@ class Launcher(abc.ABC):
 
         self.mnemonic = generate_mnemonic(12, lang='english')
 
-        for _i, _action in enumerate(self._actions):
-            pass
+        for i, action in enumerate(self._actions):
+            print(f'{i + 1} - {action.name}')
 
         try:
             handler = self._actions[int(input('action? ')) - 1]
@@ -73,7 +74,8 @@ class Launcher(abc.ABC):
 
         try:
             sys.exit(handler.handler())
-        except NonSensitiveError:
+        except NonSensitiveError as e:
+            print('error:', e)
             sys.exit(1)
         except Exception:
             traceback.print_exc()
@@ -114,6 +116,7 @@ class Launcher(abc.ABC):
         return None
 
     def launch_instance(self) -> int:
+        print('creating private blockchain...')
         body = requests.post(
             f'{ORCHESTRATOR_HOST}/instances',
             json=CreateInstanceRequest(
@@ -129,11 +132,14 @@ class Launcher(abc.ABC):
 
         user_data = body['data']
 
+        print('deploying challenge...')
         challenge_contracts = self.deploy(user_data, self.mnemonic)
 
         if x := self.update_metadata({'mnemonic': self.mnemonic, 'challenge_contracts': challenge_contracts}):
+            print('unable to update metadata')
             return x
 
+        print('your private blockchain has been set up!')
         self._print_instance_info(user_data, self.mnemonic, challenge_contracts)
         return 0
 
@@ -147,7 +153,9 @@ class Launcher(abc.ABC):
 
     def kill_instance(self) -> int:
         resp = requests.delete(f'{ORCHESTRATOR_HOST}/instances/{self.get_instance_id()}', timeout=5)
-        resp.json()
+        body = resp.json()
+
+        print(body['message'])
         return 0
 
     def deploy(self, user_data: UserData, mnemonic: str) -> list[ChallengeContract]:
@@ -155,23 +163,26 @@ class Launcher(abc.ABC):
 
         return deploy(web3, self.project_location, mnemonic, env=self.get_deployment_args(user_data))
 
-    @abc.abstractmethod
-    def get_deployment_args(self, user_data: UserData) -> dict[str, str]:
+    def get_deployment_args(self, _: UserData) -> dict[str, str]:
+        # This method can be overridden to provide additional deployment arguments
         return {}
 
-    @abc.abstractmethod
+    @staticmethod
     def _print_instance_info(
-        self,
-        user_data: dict,
-        mnemonic: str | None = None,
-        challenge_contracts: list[ChallengeContract] | None = None,
+        user_data: dict, mnemonic: str | None = None, challenge_contracts: list[ChallengeContract] | None = None
     ) -> None:
-        for _anvil_id in user_data['anvil_instances']:
-            pass
+        print('---- instance info ----')
+        print(f'- will be terminated in: {(user_data.get("expires_at", 0) - time()) / 60:.2f} minutes')
+        print('- rpc endpoints:')
+        for anvil_id in user_data['anvil_instances']:
+            print(f'    - {PUBLIC_HOST}/{user_data["external_id"]}/{anvil_id}')
+            print(f'    - {PUBLIC_WEBSOCKET_HOST}/{user_data["external_id"]}/{anvil_id}/ws')
 
         metadata = user_data.get('metadata', {})
         mnemonic = mnemonic or metadata.get('mnemonic', 'none')
         challenge_contracts = challenge_contracts or metadata.get('challenge_contracts', [])
 
-        for _contract in challenge_contracts:
-            pass
+        print(f'- your private key: {get_player_account(mnemonic).key.hex()}')
+
+        for contract in challenge_contracts:
+            print(f'- {contract["name"]} contract: {contract["address"]}')

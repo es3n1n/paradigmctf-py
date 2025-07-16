@@ -7,11 +7,22 @@ from pwn import context, remote
 from ctf_solvers.types import ChallengeInstanceInfo
 
 
+DEFAULT_HOST = 'challenge'
+DEFAULT_PORT = 1337
+
+
+class SolverError(Exception):
+    """Custom exception for solver errors."""
+
+
 class TicketedRemote:
+    def __init__(self, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> None:
+        self.host = host
+        self.port = port
+
     def __enter__(self) -> remote:
-        # note(es3n1n, 30.03.24): designed only to be used within the healthchecker
         with context.quiet:
-            self.__r = remote('challenge', 1337)
+            self.__r = remote(self.host, self.port)
 
         data = self.__r.recvuntil(b'?')
         data_str = data.decode()
@@ -29,31 +40,28 @@ class TicketedRemote:
             self.__r.close()
 
 
-def kill_instance() -> None:
-    with TicketedRemote() as r:
+def kill_instance(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> None:
+    with TicketedRemote(host, port) as r:
         r.sendlineafter(b'?', b'3')
         with context.quiet:
             r.recvall()
 
 
-def get_pwn_flag() -> str | None:
-    with TicketedRemote() as r:
+def get_pwn_flag(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> str | None:
+    with TicketedRemote(host, port) as r:
         r.sendlineafter(b'?', b'4')
-        flag = r.recvline().decode().strip()
+        with context.quiet:
+            flag = r.recvline().decode().strip()
 
     return None if 'are you sure you solved it?' in flag else flag
 
 
-def _sanitize_rpc_url(url: str) -> str:
+def _compose_rpc_url(url: str) -> str:
     url_info = urlparse(url)
     return f'http://ctf-server-anvil-proxy:8545/{url_info.path.lstrip("/")}'
 
 
-def launch_instance() -> ChallengeInstanceInfo:
-    with TicketedRemote() as r:
-        r.sendlineafter(b'?', b'1')
-        r.recvuntil(b'- rpc endpoints:\n')
-
+def _recv_instance(r: remote) -> ChallengeInstanceInfo:
     http_endpoint = r.recvline().decode().split('- ')[1].strip()
     ws_endpoint = r.recvline().decode().split('- ')[1].strip()
     r.recvuntil(b'private key: ')
@@ -63,13 +71,37 @@ def launch_instance() -> ChallengeInstanceInfo:
     while True:
         try:
             line = r.recvline().decode()[2:]
-        except EOFError:
+        except (EOFError, TimeoutError):
             break
-        contracts[line.split(' contract')[0]] = line.split(':')[1].strip()
+        contracts[line.split(' contract: ')[0]] = line.rsplit(':')[1].strip()
 
     return {
-        'http_endpoint': _sanitize_rpc_url(http_endpoint),
-        'ws_endpoint': _sanitize_rpc_url(ws_endpoint),
+        'http_endpoint': http_endpoint,
+        'http_endpoint_compose': _compose_rpc_url(http_endpoint),
+        'ws_endpoint': ws_endpoint,
+        'ws_endpoint_compose': _compose_rpc_url(ws_endpoint),
         'private_key': private_key,
         'contracts': contracts,
     }
+
+
+def get_instance_info(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> ChallengeInstanceInfo:
+    with TicketedRemote(host, port) as r:
+        r.sendlineafter(b'?', b'2')
+        try:
+            r.recvuntil(b'- rpc endpoints:\n')
+        except EOFError as err:
+            msg = 'Failed to get instance info, perhaps its not running.'
+            raise SolverError(msg) from err
+    return _recv_instance(r)
+
+
+def launch_instance(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> ChallengeInstanceInfo:
+    with TicketedRemote(host, port) as r:
+        r.sendlineafter(b'?', b'1')
+        try:
+            r.recvuntil(b'- rpc endpoints:\n')
+        except EOFError:
+            # Probably already running
+            return get_instance_info(host, port)
+    return _recv_instance(r)

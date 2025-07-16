@@ -26,6 +26,7 @@ class CTFdTeamProvider(TeamProvider):
     def get_team(self) -> str | None:
         team = self.get_team_by_ctfd_token(input(f'token? you can get one at {CTFD_PUBLIC_URL}/settings '))
         if not team:
+            print('invalid token!')
             return None
 
         return str(team)
@@ -50,21 +51,8 @@ class CTFdTeamProvider(TeamProvider):
         if not isinstance(team_id, int):
             return None
 
+        print(f'nice, authorized as team with id {team_id}')
         return team_id
-
-
-class StaticTeamProvider(TeamProvider):
-    def __init__(self, team_id: str, ticket: str) -> None:
-        self.__team_id = team_id
-        self.__ticket = ticket
-
-    def get_team(self) -> str | None:
-        ticket = input('ticket? ')
-
-        if ticket != self.__ticket:
-            return None
-
-        return self.__team_id
 
 
 class LocalTeamProvider(TeamProvider):
@@ -79,8 +67,6 @@ def get_team_provider() -> TeamProvider:
     env = os.getenv('ENV', 'local')
     if env == 'local':
         return LocalTeamProvider(team_id='local')
-    if env == 'dev':
-        return StaticTeamProvider(team_id='dev', ticket='dev2023')
     if env == 'ctfd':
         return CTFdTeamProvider()
     msg = f'unknown team provider: {env}'

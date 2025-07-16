@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  hello-challenge:
+    build: hello
+    image: paradigmctf-hello:latest
+    container_name: paradigmctf-hello
+    restart: unless-stopped
+    ports:
+      - "13371:1337"
+    networks:
+      - default
+      - ctf_network
+      - internal_network
+    environment:
+      - "CHALLENGE=hello"
+      - "FLAG=cr3{paradigm_ctf_hello_world}"
+      - "PUBLIC_HOST=http://127.0.0.1:8545"
+      - "ENV=local"
+networks:
+  internal_network:
+    driver: bridge
+    internal: true
+  ctf_network:
+    name: paradigmctf
+    external: true
