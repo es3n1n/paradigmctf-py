@@ -1,0 +1,61 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  lint_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.13']
+
+    env:
+      UV_CACHE_DIR: ~/.cache/uv
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: "latest"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.UV_CACHE_DIR }}
+        key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ hashFiles('**/uv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-${{ matrix.python-version }}-
+
+    - name: Install dependencies
+      run: uv sync --all-extras --dev
+
+    - name: Compose (docker-backend) up
+      run: docker compose -f compose.yml up -d --build
+
+    - name: Run tests
+      run: uv run pytest
+      if: ${{ !cancelled() }}
+      continue-on-error: false
+
+    - name: Show compose logs on failure
+      if: failure()
+      run: docker compose logs --no-color -n 500
+
+    - name: Compose (docker-backend) down
+      if: always()
+      run: docker compose -f compose.yml down --volumes --remove-orphans
+
+    - name: Prune uv cache
+      run: uv cache prune

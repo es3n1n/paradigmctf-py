@@ -124,7 +124,3 @@ def get_additional_account(mnemonic: str, offset: int) -> LocalAccount:
 def get_privileged_web3(user_data: UserData, anvil_id: str) -> Web3:
     anvil_instance = user_data['anvil_instances'][anvil_id]
     return Web3(Web3.HTTPProvider(f'http://{anvil_instance["ip"]}:{anvil_instance["port"]}'))
-
-
-def get_unprivileged_web3(user_data: UserData, anvil_id: str) -> Web3:
-    return Web3(Web3.HTTPProvider(f'http://anvil-proxy:8545/{user_data["external_id"]}/{anvil_id}'))

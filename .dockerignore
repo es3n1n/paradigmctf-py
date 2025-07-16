@@ -3,3 +3,6 @@
 *.lock
 .venv*/**
 .idea/**
+**/Dockerfile
+**/compose.yml
+compose/

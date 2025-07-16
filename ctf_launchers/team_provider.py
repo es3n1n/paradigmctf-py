@@ -24,7 +24,12 @@ class CTFdTeamProvider(TeamProvider):
         pass
 
     def get_team(self) -> str | None:
-        team = self.get_team_by_ctfd_token(input(f'token? you can get one at {CTFD_PUBLIC_URL}/settings '))
+        try:
+            token = input(f'token? you can get one at {CTFD_PUBLIC_URL}/settings ')
+        except EOFError:
+            return None
+
+        team = self.get_team_by_ctfd_token(token)
         if not team:
             print('invalid token!')
             return None
