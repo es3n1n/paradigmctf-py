@@ -24,14 +24,6 @@ dependencies = [
 requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
-[tool.hatch.build]
-packages = [
-    "ctf_launchers",
-    "ctf_server",
-    "ctf_solvers",
-    "foundry",
-]
-
 [dependency-groups]
 dev = [
     "cheb3",
@@ -40,6 +32,14 @@ dev = [
     "ruff>=0.12.3",
     "types-pyyaml>=6.0.12.20250516",
     "types-requests>=2.32.4.20250611",
+]
+
+[tool.hatch.build]
+packages = [
+    "ctf_launchers",
+    "ctf_server",
+    "ctf_solvers",
+    "foundry",
 ]
 
 [tool.uv.sources]
