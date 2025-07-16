@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from cheb3 import Connection
 
 from . import Instance, compile_src_for
