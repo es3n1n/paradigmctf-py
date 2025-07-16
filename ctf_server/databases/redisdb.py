@@ -1,6 +1,6 @@
 import time
 from json import dumps, loads
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Never, cast
 
 import redis
 
@@ -9,26 +9,28 @@ from ctf_server.types import UserData
 from .database import Database
 
 
+class RedisDatabaseError(Exception):
+    """Custom exception for Redis database errors."""
+
+
 class RedisDatabase(Database):
-    def __init__(self, url: str, redis_kwargs: Dict[str, Any] = {}) -> None:
+    def __init__(self, url: str, redis_kwargs: dict[str, Any] | None = None) -> None:
+        if redis_kwargs is None:
+            redis_kwargs = {}
         super().__init__()
 
-        # note(es3n1n, 27.03.24): For some reason their typehint is set to None, but in their code they're literally
-        # returning the connection object, like what?
-        self.__client: redis.Redis = redis.Redis.from_url(  # type: ignore
+        self.__client: redis.Redis = redis.Redis.from_url(
             url,
             decode_responses=True,
             **redis_kwargs,
         )
 
-    def register_instance(self, instance_id: str, instance: UserData):
+    def register_instance(self, _: str, instance: UserData) -> None:
         pipeline = self.__client.pipeline()
 
         try:
-            pipeline.json().set(f'instance/{instance["instance_id"]}', '$', instance)
-            pipeline.hset(
-                'external_ids', instance['external_id'], instance['instance_id']
-            )
+            pipeline.json().set(f'instance/{instance["instance_id"]}', '$', instance)  # type: ignore[call-arg,arg-type]
+            pipeline.hset('external_ids', instance['external_id'], instance['instance_id'])
             pipeline.zadd(
                 'expiries',
                 {
@@ -38,11 +40,12 @@ class RedisDatabase(Database):
         finally:
             pipeline.execute()
 
-    def update_instance(self, instance_id: str, instance: UserData):
-        raise Exception('not supported')
+    def update_instance(self, _: str, __: UserData) -> Never:
+        msg = 'not supported'
+        raise RedisDatabaseError(msg)
 
-    def unregister_instance(self, instance_id: str) -> Optional[UserData]:
-        instance = self.__client.json().get(f'instance/{instance_id}')
+    def unregister_instance(self, instance_id: str) -> UserData | None:
+        instance = cast('UserData | None', self.__client.json().get(f'instance/{instance_id}'))
         if instance is None:
             return None
 
@@ -52,53 +55,39 @@ class RedisDatabase(Database):
             pipeline.hdel('external_ids', instance['external_id'])
             pipeline.zrem('expiries', instance_id)
             pipeline.delete(f'metadata/{instance_id}')
-            return instance
+            return cast('UserData', instance)
         finally:
             pipeline.execute()
 
-    def get_instance(self, instance_id: str) -> Optional[UserData]:
-        instance: Optional[UserData] = self.__client.json().get(f'instance/{instance_id}')
+    def get_instance(self, instance_id: str) -> UserData | None:
+        instance = cast('UserData | None', self.__client.json().get(f'instance/{instance_id}'))
         if instance is None:
             return None
 
         instance['metadata'] = {}
         metadata = self.__client.hgetall(f'metadata/{instance_id}')
         if metadata is not None:
-            metadata = {k: loads(v) for k, v in metadata.items()}  # type: ignore
+            metadata = {k: loads(v) for k, v in metadata.items()}  # type: ignore[union-attr]
             instance['metadata'] = metadata
 
         return instance
 
-    def get_instance_by_external_id(self, rpc_id: str) -> Optional[UserData]:
+    def get_instance_by_external_id(self, rpc_id: str) -> UserData | None:
         instance_id = self.__client.hget('external_ids', rpc_id)
         if instance_id is None:
             return None
 
-        return self.get_instance(instance_id)  # type: ignore
+        return self.get_instance(instance_id)  # type: ignore[arg-type]
 
-    def get_all_instances(self) -> List[UserData]:
+    def get_all_instances(self) -> list[UserData]:
         keys = self.__client.keys('instance/*')
+        return [instance for key in keys if (instance := self.get_instance(key.split('/')[1]))]  # type: ignore[union-attr]
 
-        result = []
-        for key in keys:  # type: ignore
-            if instance := self.get_instance(key.split('/')[1]):
-                result.append(instance)
+    def get_expired_instances(self) -> list[UserData]:
+        instance_ids = self.__client.zrange('expiries', 0, int(time.time()), byscore=True)
+        return [instance for instance_id in instance_ids if (instance := self.get_instance(instance_id))]  # type: ignore[union-attr]
 
-        return result
-
-    def get_expired_instances(self) -> List[UserData]:
-        instance_ids = self.__client.zrange(
-            'expiries', 0, int(time.time()), byscore=True
-        )
-
-        instances = []
-        for instance_id in instance_ids:  # type: ignore
-            if instance := self.get_instance(instance_id):
-                instances.append(instance)
-
-        return instances
-
-    def update_metadata(self, instance_id: str, metadata: Dict[str, Union[str, List[Dict[str, str]]]]):
+    def update_metadata(self, instance_id: str, metadata: dict[str, str | list[dict[str, str]]]) -> None:
         pipeline = self.__client.pipeline()
         try:
             for k, v in metadata.items():

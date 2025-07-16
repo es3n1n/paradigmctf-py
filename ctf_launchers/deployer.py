@@ -1,48 +1,49 @@
 import os
 import subprocess
 from json import loads
-from typing import Dict, List
 
 from web3 import Web3
 
-from foundry.anvil import anvil_autoImpersonateAccount
+from foundry.anvil import anvil_auto_impersonate_account
 
 from .types import ChallengeContract
 
 
-def _deserialize_deploy_response(response: str) -> List[ChallengeContract]:
-    result: List[ChallengeContract] = list()
+class DeployerError(Exception):
+    """Custom exception for deployer errors."""
+
+
+def _deserialize_deploy_response(response: str) -> list[ChallengeContract]:
+    result: list[ChallengeContract] = []
 
     for line in response.splitlines():
         if len(line) == 0:
             continue
 
         item = loads(line)
-        result.append({
-            'name': item[0],
-            'address': item[1]
-        })
+        result.append({'name': item[0], 'address': item[1]})
 
     return result
 
 
 def deploy(
-        web3: Web3,
-        project_location: str,
-        mnemonic: str,
-        deploy_script: str = 'script/Deploy.s.sol:Deploy',
-        env: Dict = {},
-) -> List[ChallengeContract]:
-    anvil_autoImpersonateAccount(web3, True)
+    web3: Web3,
+    project_location: str,
+    mnemonic: str,
+    deploy_script: str = 'script/Deploy.s.sol:Deploy',
+    env: dict | None = None,
+) -> list[ChallengeContract]:
+    if env is None:
+        env = {}
+    anvil_auto_impersonate_account(web3, enabled=True)
 
-    rfd, wfd = os.pipe2(os.O_NONBLOCK)  # type: ignore
-
+    rfd, wfd = os.pipe2(os.O_NONBLOCK)  # type: ignore[attr-defined]
     proc = subprocess.Popen(
         args=[
             '/opt/foundry/bin/forge',
             'script',
             '--rpc-url',
-            web3.provider.endpoint_uri,  # type: ignore
+            web3.provider.endpoint_uri,  # type: ignore[attr-defined]
             '--out',
             '/artifacts/out',
             '--cache-path',
@@ -57,7 +58,8 @@ def deploy(
             'PATH': '/opt/huff/bin:/opt/foundry/bin:/usr/bin:' + os.getenv('PATH', '/fake'),
             'MNEMONIC': mnemonic,
             'OUTPUT_FILE': f'/proc/self/fd/{wfd}',
-        } | env,
+        }
+        | env,
         pass_fds=[wfd],
         cwd=project_location,
         text=True,
@@ -68,16 +70,13 @@ def deploy(
     )
     stdout, stderr = proc.communicate()
 
-    anvil_autoImpersonateAccount(web3, False)
-
+    anvil_auto_impersonate_account(web3, enabled=False)
     if proc.returncode != 0:
-        print(stdout)
-        print(stderr)
-        raise Exception('forge failed to run')
+        msg = f'forge failed to run: {stdout!r}, {stderr!r}'
+        raise DeployerError(msg)
 
     result = os.read(rfd, 1024).decode('utf8')
 
     os.close(rfd)
     os.close(wfd)
-
     return _deserialize_deploy_response(result)

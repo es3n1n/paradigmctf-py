@@ -1,4 +1,4 @@
-FROM python:3.11.6-slim
+FROM python:3.13.5-slim
 
 # Set up unprivileged user and install dependencies
 # TODO: we need bsdmainutils so we have hexdump so foundry-huff can...
@@ -30,17 +30,15 @@ RUN true && \
     huffup && \
     true
 
-# (Optimization) Install requirements
-COPY requirements.txt /tmp/requirements.txt
-
-RUN pip install -r /tmp/requirements.txt
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
 
 # Install the library
 COPY . /tmp/paradigmctf.py
-
 RUN true && \
-    pip install /tmp/paradigmctf.py uvicorn && \
-    rm -rf /tmp/requirements.txt /tmp/paradigmctf.py && \
+    uv pip install --system --no-cache-dir /tmp/paradigmctf.py && \
+    rm -rf /tmp/paradigmctf.py && \
     true
 
 USER 1000

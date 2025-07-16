@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 import requests
 from eth_abi import abi
@@ -11,15 +10,12 @@ from ctf_launchers.types import ChallengeContract
 from ctf_server.types import get_privileged_web3
 
 
-FLAG = os.getenv('FLAG', 'cr3{flag}')
-
-
 class PwnChallengeLauncher(Launcher):
     def __init__(
         self,
         project_location: str = 'challenge/project',
-        provider: TeamProvider = get_team_provider(),
-    ):
+        provider: TeamProvider = get_team_provider(),  # noqa: B008
+    ) -> None:
         super().__init__(
             project_location,
             provider,
@@ -28,22 +24,23 @@ class PwnChallengeLauncher(Launcher):
             ],
         )
 
+    @staticmethod
+    def _get_flag() -> str:
+        return os.getenv('FLAG', 'flag{dummy}')
+
     def get_flag(self) -> int:
-        instance_body = requests.get(f'{ORCHESTRATOR_HOST}/instances/{self.get_instance_id()}').json()
+        instance_body = requests.get(f'{ORCHESTRATOR_HOST}/instances/{self.get_instance_id()}', timeout=5).json()
         if not instance_body['ok']:
-            print(instance_body['message'])
             return 1
 
         user_data = instance_body['data']
 
         web3 = get_privileged_web3(user_data, 'main')
-        if not self.is_solved(
-            web3, user_data['metadata']['challenge_contracts']
-        ):
+        if not self.is_solved(web3, user_data['metadata']['challenge_contracts']):
             print('are you sure you solved it?')
             return 0
 
-        print(FLAG)
+        print(self._get_flag())
         return 0
 
     def is_contract_solved(self, web3: Web3, contract: ChallengeContract) -> bool:
@@ -59,7 +56,5 @@ class PwnChallengeLauncher(Launcher):
 
         return result
 
-    def is_solved(self, web3: Web3, contracts: List[ChallengeContract]) -> bool:
-        return not any(
-            not self.is_contract_solved(web3, contract) for contract in contracts
-        )
+    def is_solved(self, web3: Web3, contracts: list[ChallengeContract]) -> bool:
+        return all(self.is_contract_solved(web3, contract) for contract in contracts)

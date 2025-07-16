@@ -1,17 +1,22 @@
 import http.client
 import shlex
 import time
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from kubernetes import config
 from kubernetes.client.api import core_v1_api
 from kubernetes.client.exceptions import ApiException
-from kubernetes.client.models import V1Pod
+from loguru import logger
 from web3 import Web3
 
-from ..databases.database import Database
-from ..types import DEFAULT_IMAGE, CreateInstanceRequest, InstanceInfo, UserData, format_anvil_args
+from ctf_server.databases.database import Database
+from ctf_server.types import DEFAULT_IMAGE, CreateInstanceRequest, InstanceInfo, UserData, format_anvil_args
+
 from .backend import Backend
+
+
+if TYPE_CHECKING:
+    from kubernetes.client.models import V1Pod
 
 
 class KubernetesBackend(Backend):
@@ -35,25 +40,22 @@ class KubernetesBackend(Backend):
             'metadata': {'name': instance_id},
             'spec': {
                 'volumes': [{'name': 'workdir', 'emptyDir': {}}],
-                'containers': self.__get_anvil_containers(request)
-                + self.__get_daemon_containers(request),
+                'containers': self.__get_anvil_containers(request) + self.__get_daemon_containers(request),
             },
         }
 
-        api_response: V1Pod = self.__core_v1.create_namespaced_pod(
-            namespace='default', body=pod_manifest
-        )
+        api_response: V1Pod | None = None
 
         while True:
             api_response = self.__core_v1.read_namespaced_pod(
-                name=pod_manifest['metadata']['name'],  # type: ignore
-                namespace='default'
+                name=pod_manifest['metadata']['name'],  # type: ignore[index]
+                namespace='default',
             )
             if api_response.status.phase != 'Pending':
                 break
             time.sleep(1)
 
-        anvil_instances: Dict[str, InstanceInfo] = {}
+        anvil_instances: dict[str, InstanceInfo] = {}
         for offset, anvil_id in enumerate(request.get('anvil_instances', {}).keys()):
             anvil_instances[anvil_id] = {
                 'id': anvil_id,
@@ -64,14 +66,12 @@ class KubernetesBackend(Backend):
             self._prepare_node(
                 request['anvil_instances'][anvil_id],
                 Web3(
-                    Web3.HTTPProvider(
-                        f'http://{anvil_instances[anvil_id]["ip"]}:{anvil_instances[anvil_id]["port"]}'
-                    )
+                    Web3.HTTPProvider(f'http://{anvil_instances[anvil_id]["ip"]}:{anvil_instances[anvil_id]["port"]}')
                 ),
             )
 
-        daemon_instances: Dict[str, InstanceInfo] = {}
-        for daemon_id in request.get('daemon_instances', {}).keys():
+        daemon_instances: dict[str, InstanceInfo] = {}
+        for daemon_id in request.get('daemon_instances', {}):
             daemon_instances[daemon_id] = {'id': daemon_id}
 
         now = time.time()
@@ -85,7 +85,7 @@ class KubernetesBackend(Backend):
             metadata={},
         )
 
-    def __get_anvil_containers(self, args: CreateInstanceRequest) -> List[Any]:
+    def __get_anvil_containers(self, args: CreateInstanceRequest) -> list[Any]:
         return [
             {
                 'name': anvil_id,
@@ -93,14 +93,7 @@ class KubernetesBackend(Backend):
                 'command': ['sh', '-c'],
                 'args': [
                     'while true; do anvil '
-                    + ' '.join(
-                        [
-                            shlex.quote(str(v))
-                            for v in format_anvil_args(
-                                anvil_args, anvil_id, 8545 + offset
-                            )
-                        ]
-                    )
+                    + ' '.join([shlex.quote(str(v)) for v in format_anvil_args(anvil_args, anvil_id, 8545 + offset)])
                     + '; sleep 1; done;'
                 ],
                 'volumeMounts': [
@@ -110,12 +103,10 @@ class KubernetesBackend(Backend):
                     }
                 ],
             }
-            for offset, (anvil_id, anvil_args) in enumerate(
-                args.get('anvil_instances', {}).items()
-            )
+            for offset, (anvil_id, anvil_args) in enumerate(args.get('anvil_instances', {}).items())
         ]
 
-    def __get_daemon_containers(self, args: CreateInstanceRequest) -> List[Any]:
+    def __get_daemon_containers(self, args: CreateInstanceRequest) -> list[Any]:
         return [
             {
                 'name': daemon_id,
@@ -130,7 +121,7 @@ class KubernetesBackend(Backend):
             for (daemon_id, daemon_args) in args.get('daemon_instances', {}).items()
         ]
 
-    def kill_instance(self, instance_id: str) -> Optional[UserData]:
+    def kill_instance(self, instance_id: str) -> UserData | None:
         instance = self._database.unregister_instance(instance_id)
         if instance is None:
             return None
@@ -150,3 +141,6 @@ class KubernetesBackend(Backend):
             time.sleep(0.5)
 
         return instance
+
+    def _cleanup_instance(self, args: CreateInstanceRequest) -> None:
+        logger.warning(f'Cleanup request: {args}')

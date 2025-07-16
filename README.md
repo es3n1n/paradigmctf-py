@@ -18,8 +18,15 @@ Slightly modified/refactored/fixed version of [paradigmctf.py](https://github.co
 - Completely rewrote websocket anvil proxy, now it preserves connection
 - Some parts of solvers were rewritten; I bet it doesn't even work with k8s(PR welcome)
 - Added CTFd integration
+- Migrated to uv
 - Other improvements, fixes
 
 ### Notes
 
 - I never really tested koth challs/koth solvers/sqlite db, so please create an issue if something's up with them 
+
+### Todo
+
+- Make database stuff async
+- Get rid of blind exception catches
+- Migrate from requests to aiohttp fully
