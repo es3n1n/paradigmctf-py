@@ -5,7 +5,7 @@ from cheb3 import Connection
 from . import Instance
 
 
-HELLO_PWN_INSTANCE = Instance(port=13371)
+HELLO_PWN_INSTANCE = Instance(port=31337)
 # flags will be tested in challenge tests
 
 

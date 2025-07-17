@@ -7,13 +7,13 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.compose-file }}
+    name: ${{ matrix.yml }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: [ '3.13' ]
-        compose-file: [ 'compose.yml' ]
+        backend: [ 'docker', 'k8s' ]
     env:
       UV_CACHE_DIR: ~/.cache/uv
     steps:
@@ -42,20 +42,44 @@ jobs:
     - name: Install dependencies
       run: uv sync --all-extras --dev
 
-    - name: Compose up (${{ matrix.compose-file }})
-      run: docker compose -f ${{ matrix.compose-file }} up -d --build
+    - name: Compose up (${{ matrix.backend }})
+      run: docker compose -f compose.yml up -d --build
+      if: matrix.backend == 'docker'
+
+    - name: Apply (${{ matrix.backend }})
+      run: kubectl apply -f k8s.yml -f examples/k8s.yml
+      if: matrix.backend == 'k8s'
+
+    - name: Forward anvil-proxy (k8s)
+      if: matrix.backend == 'k8s'
+      run: |
+        setsid kubectl port-forward svc/anvil-proxy 8545:8545 --address 127.0.0.1 \
+              > /tmp/port-forward.log 2>&1 &
+        echo $! > /tmp/pf.pid
 
     - name: Run tests
       run: uv run pytest
       if: ${{ !cancelled() && !failure() }}
 
-    - name: Show compose logs on failure
-      if: failure()
-      run: docker compose -f ${{ matrix.compose-file }} logs --no-color -n 500
+    - name: Show logs (${{ matrix.backend }})
+      if: failure() && matrix.backend == 'docker'
+      run: docker compose -f compose.yml logs --no-color -n 500
 
-    - name: Compose down (${{ matrix.compose-file }})
-      if: always()
-      run: docker compose -f ${{ matrix.compose-file }} down --volumes --remove-orphans
+    - name: Show logs (${{ matrix.backend }})
+      if: failure() && matrix.backend == 'k8s'
+      run: kubectl logs -l app=ctf-server --tail=500
+
+    - name: Down (${{ matrix.backend }})
+      if: always() && matrix.backend == 'docker'
+      run: docker compose -f compose.yml down --volumes --remove-orphans || true
+
+    - name: Stop port-forward (k8s)
+      if: always() && matrix.backend == 'k8s'
+      run: kill "$(cat /tmp/pf.pid)" || true
+
+    - name: Delete (${{ matrix.backend }})
+      if: always() && matrix.backend == 'k8s'
+      run: kubectl delete -f k8s.yml -f examples/k8s.yml || true
 
     - name: Prune uv cache
       run: uv cache prune
