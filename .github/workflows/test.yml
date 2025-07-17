@@ -72,27 +72,42 @@ jobs:
 
     - name: Build images (k8s)
       if: matrix.backend == 'k8s'
-      run: docker compose -f compose.yml build
+      run: |
+        docker compose -f compose.yml build
+        docker images --format '{{.Repository}}:{{.Tag}}' \
+          | grep -E 'paradigmctf-chal-|es3n1n' \
+          | xargs -I{} kind load docker-image {} --name ctf
 
     - name: Up (k8s)
       run: kubectl apply -f k8s.yml -f examples/k8s.yml
       if: matrix.backend == 'k8s'
 
-    - name: Wait for challenge to be Ready (k8s)
+    - name: Wait for stuff to be Ready (k8s)
       if: matrix.backend == 'k8s'
-      run: kubectl rollout status deployment/challenge-hello --timeout=120s
+      run: kubectl rollout status deployment/anvil-proxy --timeout=120s
 
     - name: Run tests
       run: uv run pytest
       if: ${{ !cancelled() && !failure() }}
 
     - name: Show logs (docker)
-      if: failure() && matrix.backend == 'docker'
+      if: (failure() || cancelled()) && matrix.backend == 'docker'
       run: docker compose -f compose.yml logs --no-color -n 500
 
     - name: Show logs (k8s)
-      if: failure() && matrix.backend == 'k8s'
-      run: kubectl logs -l app=ctf-server --tail=500
+      if: (failure() || cancelled()) && matrix.backend == 'k8s'
+      run: |
+        kubectl logs -l app=ctf-server --tail=500 || true
+        kubectl logs -l app=anvil-proxy --tail=500 || true
+        kubectl logs -l app=challenge-hello --tail=500 || true
+
+    - name: Show pod status (k8s)
+      if: (failure() || cancelled()) && matrix.backend == 'k8s'
+      run: |
+        kubectl get pods -o wide || true
+        kubectl describe pod -l app=challenge-hello || true
+        kubectl describe pod -l app=ctf-server || true
+        kubectl describe pod -l app=anvil-proxy || true
 
     - name: Down (docker)
       if: always() && matrix.backend == 'docker'
