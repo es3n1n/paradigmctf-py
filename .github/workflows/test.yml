@@ -33,9 +33,6 @@ jobs:
           - containerPort: 31337
             hostPort: 31337
             protocol: TCP
-          - containerPort: 8545
-            hostPort: 8545
-            protocol: TCP
         EOF
 
     - name: Create kind cluster (k8s)
@@ -86,9 +83,17 @@ jobs:
       if: matrix.backend == 'k8s'
       run: kubectl wait --for=condition=available --timeout=120s deployment --all
 
-    - name: Run tests
+    - name: Run tests (docker)
       run: uv run pytest
-      if: ${{ !cancelled() && !failure() }}
+      if: ${{ !cancelled() && !failure() && matrix.backend == 'docker' }}
+
+    - name: Run tests (k8s)
+      run: |
+        nohup kubectl port-forward svc/anvil-proxy 8545:8545 --address 127.0.0.1 \
+              > /tmp/port-forward.log 2>&1 &
+        PF_PID=$!
+        trap "echo 'Stopping port-forward'; kill $PF_PID" EXIT
+        uv run pytest
 
     - name: Show logs (docker)
       if: (failure() || cancelled()) && matrix.backend == 'docker'
