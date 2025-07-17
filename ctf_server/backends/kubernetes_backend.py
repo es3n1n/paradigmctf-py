@@ -154,9 +154,7 @@ class KubernetesBackend(Backend):
             )
         except ApiException as e:
             if e.status != http.client.NOT_FOUND:
-                logger.opt(exception=e).error(
-                    f'cannot delete pod {instance_id} during cleanup'
-                )
+                logger.opt(exception=e).error(f'cannot delete pod {instance_id} during cleanup')
                 return
 
         # wait until the pod disappears so that a subsequent launch can reuse the name

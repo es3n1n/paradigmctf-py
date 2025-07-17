@@ -16,21 +16,23 @@ spec:
         app: challenge-hello
     spec:
       containers:
-        - name: hello
-          image: paradigmctf-chal-hello:latest
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: CHALLENGE
-              value: "hello"
-            - name: FLAG
-              value: "cr3{paradigm_ctf_hello_world}"
-            - name: PUBLIC_HOST
-              value: "http://127.0.0.1:8545"
-            - name: ENV
-              value: "local"
-          ports:
-            - containerPort: 1337
-              name: tcp-1337
+      - name: hello
+        image: paradigmctf-chal-hello:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: CHALLENGE
+          value: "hello"
+        - name: FLAG
+          value: "cr3{paradigm_ctf_hello_world}"
+        - name: PUBLIC_HOST
+          value: "http://127.0.0.1:8545"
+        - name: ENV
+          value: "local"
+        ports:
+        - containerPort: 1337
+        readinessProbe:
+          tcpSocket:
+            port: 8545
 ---
 apiVersion: v1
 kind: Service
@@ -41,7 +43,6 @@ spec:
   selector:
     app: challenge-hello
   ports:
-    - name: tcp-1337
-      port: 1337
-      targetPort: 1337
-      nodePort: 31337
+  - name: tcp-1337
+    port: 1337
+    nodePort: 31337

@@ -84,10 +84,11 @@ jobs:
       run: kubectl wait --for=condition=available --timeout=120s deployment --all
 
     - name: Run tests (docker)
-      run: uv run pytest
       if: ${{ !cancelled() && !failure() && matrix.backend == 'docker' }}
+      run: uv run pytest
 
     - name: Run tests (k8s)
+      if: ${{ !cancelled() && !failure() && matrix.backend == 'k83' }}
       run: |
         nohup kubectl port-forward svc/anvil-proxy 8545:8545 --address 127.0.0.1 \
               > /tmp/port-forward.log 2>&1 &

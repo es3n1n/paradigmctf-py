@@ -73,7 +73,6 @@ spec:
   ports:
     - protocol: TCP
       port: 6379
-      targetPort: 6379
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -105,6 +104,9 @@ spec:
           value: redis://redis:6379/0
         ports:
         - containerPort: 7283
+        readinessProbe:
+          tcpSocket:
+            port: 7283
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
@@ -124,7 +126,6 @@ spec:
   ports:
     - protocol: TCP
       port: 7283
-      targetPort: 7283
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -154,6 +155,9 @@ spec:
           value: redis://redis:6379/0
         ports:
         - containerPort: 8545
+        readinessProbe:
+          tcpSocket:
+            port: 8545
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
@@ -173,4 +177,3 @@ spec:
   ports:
     - protocol: TCP
       port: 8545
-      targetPort: 8545
