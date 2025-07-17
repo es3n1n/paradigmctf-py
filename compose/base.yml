@@ -14,7 +14,7 @@ services:
   ctf-server-anvil-proxy:
     restart: unless-stopped
     container_name: blockchain-infra-anvil-proxy
-    image: es3n1n/paradigmctf.py:latest
+    image: ghcr.io/es3n1n/paradigmctf.py:latest
     build: ../
     command: uvicorn ctf_server:anvil_proxy --host 0.0.0.0 --port 8545 --workers 3
     ports:

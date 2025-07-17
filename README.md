@@ -2,9 +2,9 @@
 
 Slightly modified/refactored/fixed version of [paradigmctf.py](https://github.com/paradigmxyz/paradigm-ctf-infrastructure/)
 
-### Docker hub
+### Docker image
 
-[`es3n1n/paradigmctf.py:latest`](https://hub.docker.com/repository/docker/es3n1n/paradigmctf.py/general)
+[`ghcr.io/es3n1n/paradigmctf.py:latest`](https://github.com/es3n1n/paradigmctf.py/pkgs/container/paradigmctf.py)
 
 ### What's changed
 

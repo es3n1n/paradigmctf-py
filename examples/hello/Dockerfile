@@ -9,7 +9,7 @@ RUN true && \
     forge build --out /artifacts/out --cache-path /artifacts/cache && \
     true
 
-FROM es3n1n/paradigmctf.py:latest
+FROM ghcr.io/es3n1n/paradigmctf.py:latest
 
 COPY --chown=user:user . /challenge
 COPY --from=foundry --chown=user:user /artifacts /artifacts
