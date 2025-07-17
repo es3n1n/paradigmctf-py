@@ -21,6 +21,12 @@ jobs:
       with:
         submodules: true
 
+    - name: Create kind cluster (k8s)
+      if: matrix.backend == 'k8s'
+      uses: helm/kind-action@v1
+      with:
+        cluster_name: ctf
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -42,11 +48,11 @@ jobs:
     - name: Install dependencies
       run: uv sync --all-extras --dev
 
-    - name: Compose up (${{ matrix.backend }})
+    - name: Up (docker)
       run: docker compose -f compose.yml up -d --build
       if: matrix.backend == 'docker'
 
-    - name: Apply (${{ matrix.backend }})
+    - name: Up (k8s)
       run: kubectl apply -f k8s.yml -f examples/k8s.yml
       if: matrix.backend == 'k8s'
 
@@ -61,15 +67,15 @@ jobs:
       run: uv run pytest
       if: ${{ !cancelled() && !failure() }}
 
-    - name: Show logs (${{ matrix.backend }})
+    - name: Show logs (docker)
       if: failure() && matrix.backend == 'docker'
       run: docker compose -f compose.yml logs --no-color -n 500
 
-    - name: Show logs (${{ matrix.backend }})
+    - name: Show logs (k8s)
       if: failure() && matrix.backend == 'k8s'
       run: kubectl logs -l app=ctf-server --tail=500
 
-    - name: Down (${{ matrix.backend }})
+    - name: Down (docker)
       if: always() && matrix.backend == 'docker'
       run: docker compose -f compose.yml down --volumes --remove-orphans || true
 
@@ -77,7 +83,7 @@ jobs:
       if: always() && matrix.backend == 'k8s'
       run: kill "$(cat /tmp/pf.pid)" || true
 
-    - name: Delete (${{ matrix.backend }})
+    - name: Down (k8s)
       if: always() && matrix.backend == 'k8s'
       run: kubectl delete -f k8s.yml -f examples/k8s.yml || true
 
