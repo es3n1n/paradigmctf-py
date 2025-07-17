@@ -146,7 +146,7 @@ spec:
       containers:
       - name: anvil-proxy
         image: ghcr.io/es3n1n/paradigmctf.py:latest
-        command: ["uvicorn", "--host", "0.0.0.0", "--port", "8545", "--workers", "11", "ctf_server:anvil_proxy"]
+        command: ["uvicorn", "--host", "0.0.0.0", "--port", "8545", "--workers", "3", "ctf_server:anvil_proxy"]
         env:
         - name: DATABASE
           value: redis
@@ -160,8 +160,8 @@ spec:
         resources:
           limits:
             # TODO(es3n1n): workers = cores * 2.0 + 1.0 (is this correct?)
-            cpu: 5.0
-            memory: 4G
+            cpu: 1.0
+            memory: 2G
 ---
 apiVersion: v1
 kind: Service

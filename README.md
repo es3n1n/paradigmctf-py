@@ -35,6 +35,12 @@ while deploying your own instance:
 - [compose.yml](./compose.yml) - docker backend
 - [k8s.yml](./k8s.yml) - k8s backend
 
+### Deployment notes
+
+- You must use [our forge-ctf](https://github.com/es3n1n/forge-ctf)
+- Always double-check the amount of workers in the compose/k8s files, they are set to minimal values for testing, but
+in production you should set them to a higher value (same goes for k8s resource limits)
+
 ### Running tests
 
 To run tests, you will first need to deploy either of the example deployments.

@@ -84,7 +84,7 @@ jobs:
 
     - name: Wait for stuff to be Ready (k8s)
       if: matrix.backend == 'k8s'
-      run: kubectl rollout status deployment/anvil-proxy --timeout=120s
+      run: kubectl wait --for=condition=available --timeout=120s deployment --all
 
     - name: Run tests
       run: uv run pytest
