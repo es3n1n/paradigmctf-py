@@ -44,8 +44,7 @@ class KubernetesBackend(Backend):
             },
         }
 
-        api_response: V1Pod | None = None
-
+        api_response: V1Pod = self.__core_v1.create_namespaced_pod(namespace='default', body=pod_manifest)
         while True:
             api_response = self.__core_v1.read_namespaced_pod(
                 name=pod_manifest['metadata']['name'],  # type: ignore[index]
@@ -143,4 +142,27 @@ class KubernetesBackend(Backend):
         return instance
 
     def _cleanup_instance(self, args: CreateInstanceRequest) -> None:
-        logger.warning(f'Cleanup request: {args}')
+        instance_id = args['instance_id']
+        logger.warning(f'cleaning up instance: {instance_id}')
+
+        try:
+            self.__core_v1.delete_namespaced_pod(
+                namespace='default',
+                name=instance_id,
+                grace_period_seconds=0,
+                propagation_policy='Background',
+            )
+        except ApiException as e:
+            if e.status != http.client.NOT_FOUND:
+                logger.opt(exception=e).error(f'cannot delete pod {instance_id} during cleanup')
+                return
+
+        # wait until the pod disappears so that a subsequent launch can reuse the name
+        while True:
+            try:
+                self.__core_v1.read_namespaced_pod(name=instance_id, namespace='default')
+                time.sleep(0.5)
+            except ApiException as e:
+                if e.status == http.client.NOT_FOUND:
+                    break
+                raise

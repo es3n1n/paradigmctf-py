@@ -38,7 +38,7 @@ class RemoteScoreSubmitter(ScoreSubmitter):
                 'data': data,
                 'score': score,
             },
-            timeout=5,
+            timeout=60,
         ).json()
 
         if not resp['ok']:

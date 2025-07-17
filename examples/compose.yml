@@ -5,7 +5,7 @@ services:
     container_name: blockchain-infra-challenge-hello
     restart: unless-stopped
     ports:
-      - "13371:1337"
+      - "31337:1337"
     networks:
       - default
       - ctf_network

@@ -4,7 +4,7 @@ from . import Instance, compile_src_for
 
 
 def test_challenge_hello() -> None:
-    instance = Instance(port=13371)
+    instance = Instance(port=31337)
     data = instance.launch()
     assert instance.get_pwn_flag() is None
 

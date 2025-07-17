@@ -26,7 +26,6 @@ Slightly modified/refactored/fixed version of [paradigmctf.py](https://github.co
 - KOTH challenges
 - KOTH solvers
 - SQLite database
-- K8s backend
 
 ### Example deployments
 
@@ -34,7 +33,13 @@ There a few compose examples for deployments that are used for tests, you can re
 while deploying your own instance:
 
 - [compose.yml](./compose.yml) - docker backend
-- [compose-k8s.yml](./compose-k8s.yml) - k8s backend
+- [k8s.yml](./k8s.yml) - k8s backend
+
+### Deployment notes
+
+- You must use [our forge-ctf](https://github.com/es3n1n/forge-ctf)
+- Always double-check the amount of workers in the compose/k8s files, they are set to minimal values for testing, but
+in production you should set them to a higher value (same goes for k8s resource limits)
 
 ### Running tests
 
