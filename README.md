@@ -45,3 +45,11 @@ To run tests, you will first need to deploy either of the example deployments.
 - Make database stuff async
 - Get rid of blind exception catches
 - Migrate from requests to aiohttp fully
+
+paradigm's original todo:
+
+- Huff support is pretty bad, needs the following changes upstream:
+- - [huff-language/foundry-huff#47](https://github.com/huff-language/foundry-huff/issues/47)
+- - Needs to support broadcasting from specific address
+- - Needs to stop using hexdump to generate some random bytes
+- Kubernetes support is not complete yet
