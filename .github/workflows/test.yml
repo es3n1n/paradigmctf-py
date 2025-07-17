@@ -70,9 +70,17 @@ jobs:
       run: docker compose -f compose.yml up -d --build
       if: matrix.backend == 'docker'
 
+    - name: Build images (k8s)
+      if: matrix.backend == 'k8s'
+      run: docker compose -f compose.yml build
+
     - name: Up (k8s)
       run: kubectl apply -f k8s.yml -f examples/k8s.yml
       if: matrix.backend == 'k8s'
+
+    - name: Wait for challenge to be Ready (k8s)
+      if: matrix.backend == 'k8s'
+      run: kubectl rollout status deployment/challenge-hello --timeout=120s
 
     - name: Run tests
       run: uv run pytest
