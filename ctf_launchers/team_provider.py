@@ -45,7 +45,7 @@ class CTFdTeamProvider(TeamProvider):
                 'Authorization': f'Token {ctfd_token}',
                 'Content-Type': 'application/json',
             },
-            timeout=5,
+            timeout=60,
         ).json()
         if 'success' not in user_info or not user_info['success'] or 'data' not in user_info:
             return None

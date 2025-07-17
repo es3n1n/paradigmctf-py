@@ -42,7 +42,7 @@ class Daemon(abc.ABC):
         resp = requests.post(
             f'{ORCHESTRATOR}/instances/{INSTANCE_ID}/metadata',
             json=new_metadata,
-            timeout=5,
+            timeout=60,
         )
         body = resp.json()
         if not body['ok']:

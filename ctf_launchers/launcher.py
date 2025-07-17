@@ -108,7 +108,7 @@ class Launcher:
         resp = requests.post(
             f'{ORCHESTRATOR_HOST}/instances/{self.get_instance_id()}/metadata',
             json=new_metadata,
-            timeout=5,
+            timeout=60,
         )
         body = resp.json()
         if not body['ok']:
@@ -125,7 +125,7 @@ class Launcher:
                 anvil_instances=self.get_anvil_instances(),
                 daemon_instances=self.get_daemon_instances(),
             ),
-            timeout=5,
+            timeout=60,
         ).json()
         if not body['ok']:
             raise NonSensitiveError(body['message'])
