@@ -21,11 +21,29 @@ jobs:
       with:
         submodules: true
 
+    - name: Write config file (k8s)
+      if: matrix.backend == 'k8s'
+      run: |
+        cat <<EOF > kind-config.yaml
+        kind: Cluster
+        apiVersion: kind.x-k8s.io/v1alpha4
+        nodes:
+        - role: control-plane
+          extraPortMappings:
+          - containerPort: 31337
+            hostPort: 31337
+            protocol: TCP
+          - containerPort: 8545
+            hostPort: 8545
+            protocol: TCP
+        EOF
+
     - name: Create kind cluster (k8s)
       if: matrix.backend == 'k8s'
       uses: helm/kind-action@v1
       with:
         cluster_name: ctf
+        config: kind-config.yaml
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -58,17 +76,7 @@ jobs:
 
     - name: Run tests
       run: uv run pytest
-      if: ${{ !cancelled() && !failure() && matrix.backend == 'docker' }}
-
-    - name: Run tests (k8s)
-      if: ${{ !cancelled() && !failure() && matrix.backend == 'k8s' }}
-      run: |
-        nohup kubectl port-forward svc/anvil-proxy 8545:8545 --address 127.0.0.1 \
-              > /tmp/port-forward.log 2>&1 &
-        PF_PID=$!
-        trap "kill $PF_PID" EXIT
-
-        uv run pytest
+      if: ${{ !cancelled() && !failure() }}
 
     - name: Show logs (docker)
       if: failure() && matrix.backend == 'docker'
