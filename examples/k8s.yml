@@ -30,9 +30,10 @@ spec:
           value: "local"
         ports:
         - containerPort: 1337
+          name: tcp-1337
         readinessProbe:
           tcpSocket:
-            port: 8545
+            port: 1337
 ---
 apiVersion: v1
 kind: Service
