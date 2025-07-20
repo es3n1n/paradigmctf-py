@@ -61,6 +61,7 @@ class KubernetesBackend(Backend):
                 'ip': api_response.status.pod_ip,
                 'port': 8545 + offset,
             }
+            self._remap_extra_anvil_keys(anvil_instances[anvil_id], request['anvil_instances'][anvil_id])
 
             self._prepare_node(
                 request['anvil_instances'][anvil_id],

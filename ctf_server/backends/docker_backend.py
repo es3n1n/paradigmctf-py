@@ -31,11 +31,12 @@ class DockerBackend(Backend):
 
     def _launch_instance_impl(self, request: CreateInstanceRequest) -> UserData:
         instance_id = request['instance_id']
+        requested_anvil_instances = request['anvil_instances']
 
         volume: Volume = self.__client.volumes.create(name=instance_id)
 
         anvil_containers: dict[str, Container] = {}
-        for anvil_id, anvil_args in request['anvil_instances'].items():
+        for anvil_id, anvil_args in requested_anvil_instances.items():
             anvil_containers[anvil_id] = self.__client.containers.run(  # type: ignore[call-overload]
                 name=f'{instance_id}-{anvil_id}',
                 image=anvil_args.get('image', DEFAULT_IMAGE),
@@ -75,6 +76,7 @@ class DockerBackend(Backend):
                 'ip': container.attrs['NetworkSettings']['Networks']['paradigmctf']['IPAddress'],
                 'port': 8545,
             }
+            self._remap_extra_anvil_keys(anvil_instances[anvil_id], requested_anvil_instances[anvil_id])
 
             self._prepare_node(
                 request['anvil_instances'][anvil_id],

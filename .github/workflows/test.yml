@@ -33,6 +33,9 @@ jobs:
           - containerPort: 31337
             hostPort: 31337
             protocol: TCP
+          - containerPort: 31338
+            hostPort: 31338
+            protocol: TCP
         EOF
 
     - name: Create kind cluster (k8s)

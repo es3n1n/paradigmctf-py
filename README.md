@@ -18,6 +18,7 @@ Slightly modified/refactored/fixed version of [paradigmctf.py](https://github.co
 - Completely rewrote websocket anvil proxy, now it preserves connection
 - Some parts of solvers were rewritten
 - Added CTFd integration
+- Added `EXTRA_ALLOWED_METHODS` environment variable to allow extra methods in anvil proxy
 - Migrated to uv
 - Other improvements, fixes
 

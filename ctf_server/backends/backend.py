@@ -17,6 +17,7 @@ from ctf_server.types import (
     DEFAULT_DERIVATION_PATH,
     DEFAULT_MNEMONIC,
     CreateInstanceRequest,
+    InstanceInfo,
     LaunchAnvilInstanceArgs,
     UserData,
 )
@@ -101,3 +102,7 @@ class Backend(abc.ABC):
                 ).address,
                 hex(int(args.get('balance', None) or DEFAULT_BALANCE) * 10**18),
             )
+
+    @staticmethod
+    def _remap_extra_anvil_keys(out: InstanceInfo, anvil_args: LaunchAnvilInstanceArgs) -> None:
+        out['extra_allowed_methods'] = anvil_args.get('extra_allowed_methods', None)
