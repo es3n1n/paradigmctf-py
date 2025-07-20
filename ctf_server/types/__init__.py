@@ -1,6 +1,4 @@
 import os
-import subprocess
-from dataclasses import dataclass
 from typing import NotRequired
 
 from eth_account import Account
@@ -32,6 +30,7 @@ class LaunchAnvilInstanceArgs(TypedDict):
     chain_id: NotRequired[int | None]
     code_size_limit: NotRequired[int | None]
     block_time: NotRequired[int | None]
+    extra_allowed_methods: NotRequired[list[str] | None]
 
 
 def format_anvil_args(args: LaunchAnvilInstanceArgs, anvil_id: str, port: int = 8545) -> list[str]:
@@ -81,15 +80,7 @@ class InstanceInfo(TypedDict):
     id: str
     ip: NotRequired[str]
     port: NotRequired[int]
-
-
-@dataclass
-class AnvilInstance:
-    proc: subprocess.Popen
-    id: str
-
-    ip: str
-    port: int
+    extra_allowed_methods: NotRequired[list[str] | None]
 
 
 class UserData(TypedDict):

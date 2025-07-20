@@ -16,3 +16,21 @@ services:
       - "ENV=local"
     depends_on:
       - ctf-server-orchestrator
+  blockchain-challenge-extra-methods:
+    build: hello
+    image: paradigmctf-chal-hello:latest
+    container_name: blockchain-infra-challenge-extra-methods
+    restart: unless-stopped
+    ports:
+      - "31338:1337"
+    networks:
+      - default
+      - ctf_network
+    environment:
+      - "CHALLENGE=extra-methods"
+      - "FLAG=cr3{extra_methods}"
+      - "PUBLIC_HOST=http://127.0.0.1:8545"
+      - "ENV=local"
+      - "EXTRA_ALLOWED_METHODS=eth_sign"
+    depends_on:
+      - ctf-server-orchestrator

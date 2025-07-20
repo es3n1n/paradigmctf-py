@@ -16,6 +16,7 @@ from websockets import WebSocketException
 
 from .databases import Database
 from .loaders import load_database
+from .types import InstanceInfo
 from .utils import worker
 
 
@@ -81,7 +82,7 @@ async def root() -> dict:
     return jsonrpc_fail(None, -32600, 'Please use the full node url')
 
 
-def validate_request(request: dict) -> dict | None:
+def validate_request(request: dict, instance_info: InstanceInfo) -> dict | None:
     if not isinstance(request, dict):
         return jsonrpc_fail(None, -32600, 'expected json object')
 
@@ -94,56 +95,42 @@ def validate_request(request: dict) -> dict | None:
     if not isinstance(request_method, str):
         return jsonrpc_fail(request['id'], -32600, 'invalid jsonrpc method')
 
-    if request_method.split('_')[0] not in ALLOWED_NAMESPACES or request_method in DISALLOWED_METHODS:
+    denied = request_method.split('_')[0] not in ALLOWED_NAMESPACES or request_method in DISALLOWED_METHODS
+    if denied and request_method not in (instance_info['extra_allowed_methods'] or []):
         return jsonrpc_fail(request['id'], -32600, 'forbidden jsonrpc method')
 
     return None
 
 
-async def proxy_request(
-    external_id: str, anvil_id: str, request_id: str | None, body: dict | list | str | int | None
+async def send_request(
+    anvil_instance: InstanceInfo, request_id: str | None, body: dict | list | str | int | None
 ) -> dict | None:
-    user_data = context.database.get_instance_by_external_id(external_id)
-    if user_data is None:
-        return jsonrpc_fail(request_id, -32602, 'invalid rpc url, instance not found')
-
-    anvil_instance = user_data.get('anvil_instances', {}).get(anvil_id, None)
-    if anvil_instance is None:
-        return jsonrpc_fail(request_id, -32602, 'invalid rpc url, chain not found')
-
     instance_host = f'http://{anvil_instance["ip"]}:{anvil_instance["port"]}'
     try:
         async with context.session.post(instance_host, json=body) as resp:
             return await resp.json()
     except Exception as e:
-        logger.opt(exception=e).error(f'failed to proxy anvil request to {external_id}/{anvil_id}')
-        return jsonrpc_fail(request_id, -32602, str(e))
+        logger.opt(exception=e).error(f'failed to proxy anvil request to {anvil_instance}')
+        return jsonrpc_fail(request_id, -32602, 'failed to proxy request to anvil instance')
 
 
-@app.post('/{external_id}/{anvil_id}')
-async def http_rpc(external_id: str, anvil_id: str, request: Request) -> dict | list | None:
-    try:
-        body = await request.json()
-    except json.JSONDecodeError:
-        return jsonrpc_fail(None, -32600, 'expected json body')
+async def proxy_request(anvil_instance: InstanceInfo, body: list | dict) -> dict | list | None:
+    request_id = body.get('id') if isinstance(body, dict) else None
 
-    # special handling for batch requests
     if isinstance(body, list):
         responses = []
         for idx, req in enumerate(body):
-            validation_error = validate_request(req)
+            validation_error = validate_request(req, anvil_instance)
             responses.append(validation_error)
 
             if validation_error is not None:
-                # neuter the request
                 body[idx] = {
                     'jsonrpc': '2.0',
                     'id': idx,
                     'method': 'web3_clientVersion',
                 }
 
-        upstream_responses = await proxy_request(external_id, anvil_id, None, body)
-
+        upstream_responses = await send_request(anvil_instance, request_id, body)
         for idx in range(len(responses)):
             if responses[idx] is None:
                 if isinstance(upstream_responses, list):
@@ -153,11 +140,31 @@ async def http_rpc(external_id: str, anvil_id: str, request: Request) -> dict | 
 
         return responses
 
-    validation_resp = validate_request(body)
+    if not isinstance(body, dict):
+        return jsonrpc_fail(request_id, -32600, 'expected json object')
+
+    validation_resp = validate_request(body, anvil_instance)
     if validation_resp is not None:
         return validation_resp
+    return await send_request(anvil_instance, request_id, body)
 
-    return await proxy_request(external_id, anvil_id, body['id'], body)
+
+@app.post('/{external_id}/{anvil_id}')
+async def http_rpc(external_id: str, anvil_id: str, request: Request) -> dict | list | None:
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return jsonrpc_fail(None, -32600, 'expected json body')
+
+    user_data = context.database.get_instance_by_external_id(external_id)
+    if user_data is None:
+        return jsonrpc_fail(None, -32602, 'invalid rpc url, instance not found')
+
+    anvil_instance = user_data.get('anvil_instances', {}).get(anvil_id, None)
+    if anvil_instance is None:
+        return jsonrpc_fail(None, -32602, 'invalid rpc url, chain not found')
+
+    return await proxy_request(anvil_instance, body)
 
 
 @app.websocket('/{external_id}/{anvil_id}/ws')
@@ -187,13 +194,13 @@ async def ws_rpc(external_id: str, anvil_id: str, client_ws: WebSocket) -> None:
                     await client_ws.send_json(jsonrpc_fail(None, -32600, 'expected json body'))
                     continue
 
-                if validation := validate_request(json_msg):
+                if validation := validate_request(json_msg, anvil_instance):
                     await client_ws.send_json(validation)
                     continue
 
                 await remote_ws.send(message)
-
                 response = await remote_ws.recv()
+
                 if isinstance(response, str):
                     response = response.encode()
                 await client_ws.send_bytes(response)

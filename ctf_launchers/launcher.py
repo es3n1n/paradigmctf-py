@@ -30,6 +30,7 @@ PUBLIC_WEBSOCKET_HOST = http_url_to_ws(PUBLIC_HOST)
 
 ETH_RPC_URL = os.getenv('ETH_RPC_URL')
 TIMEOUT = int(os.getenv('TIMEOUT', '1440'))
+EXTRA_ALLOWED_METHODS = os.getenv('EXTRA_ALLOWED_METHODS', '').split(',')
 
 
 @dataclass
@@ -62,10 +63,11 @@ class Launcher:
         if not self.team:
             sys.exit(1)
 
-        self.mnemonic = generate_mnemonic(12, lang='english')
-
         for i, action in enumerate(self._actions):
             print(f'{i + 1} - {action.name}')
+
+        # TODO(es3n1n, 20.07.25): generate only when needed
+        self.mnemonic = generate_mnemonic(12, lang='english')
 
         try:
             handler = self._actions[int(input('action? ')) - 1]
@@ -78,6 +80,7 @@ class Launcher:
             print('error:', e)
             sys.exit(1)
         except Exception:
+            print('an unexpected error occurred, please report it to the organizers (not the team)')
             traceback.print_exc()
             sys.exit(1)
 
@@ -89,7 +92,7 @@ class Launcher:
     def get_daemon_instances(self) -> dict[str, DaemonInstanceArgs]:
         return {}
 
-    def get_anvil_instance(self, **kwargs: int | str | None) -> LaunchAnvilInstanceArgs:
+    def get_anvil_instance(self, **kwargs: int | str | list[str] | None) -> LaunchAnvilInstanceArgs:
         if 'balance' not in kwargs:
             kwargs['balance'] = 1000
         if 'accounts' not in kwargs:
@@ -98,6 +101,8 @@ class Launcher:
             kwargs['fork_url'] = ETH_RPC_URL
         if 'mnemonic' not in kwargs:
             kwargs['mnemonic'] = self.mnemonic
+        if 'extra_allowed_methods' not in kwargs:
+            kwargs['extra_allowed_methods'] = EXTRA_ALLOWED_METHODS
         return LaunchAnvilInstanceArgs(**kwargs)  # type: ignore[typeddict-item]
 
     def get_instance_id(self) -> str:
@@ -155,7 +160,7 @@ class Launcher:
         resp = requests.delete(f'{ORCHESTRATOR_HOST}/instances/{self.get_instance_id()}', timeout=5)
         body = resp.json()
 
-        print(body['message'])
+        print(body.get('message', 'no message'))
         return 0
 
     def deploy(self, user_data: UserData, mnemonic: str) -> list[ChallengeContract]:
