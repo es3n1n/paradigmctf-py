@@ -28,7 +28,7 @@ class Instance:
     def kill(self) -> None:
         kill_instance(self.host, self.port)
 
-    def launch(self, *, kill_if_exists: bool = True) -> ChallengeInstanceInfo:
+    def launch(self, *, kill_if_exists: bool) -> ChallengeInstanceInfo:
         try:
             return launch_instance(self.host, self.port, get_if_running=not kill_if_exists)
         except SolverError:
@@ -40,3 +40,7 @@ class Instance:
 
     def get_pwn_flag(self) -> str | None:
         return get_pwn_flag(self.host, self.port)
+
+
+HELLO_PWN = Instance(port=31337)
+EXTRA_METHODS_PWN = Instance(port=31338)
