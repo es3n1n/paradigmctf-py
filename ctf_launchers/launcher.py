@@ -30,7 +30,6 @@ PUBLIC_WEBSOCKET_HOST = http_url_to_ws(PUBLIC_HOST)
 
 ETH_RPC_URL = os.getenv('ETH_RPC_URL')
 TIMEOUT = int(os.getenv('TIMEOUT', '1440'))
-EXTRA_ALLOWED_METHODS = os.getenv('EXTRA_ALLOWED_METHODS', '').split(',')
 
 
 @dataclass
@@ -101,8 +100,6 @@ class Launcher:
             kwargs['fork_url'] = ETH_RPC_URL
         if 'mnemonic' not in kwargs:
             kwargs['mnemonic'] = self.mnemonic
-        if 'extra_allowed_methods' not in kwargs:
-            kwargs['extra_allowed_methods'] = EXTRA_ALLOWED_METHODS
         return LaunchAnvilInstanceArgs(**kwargs)  # type: ignore[typeddict-item]
 
     def get_instance_id(self) -> str:

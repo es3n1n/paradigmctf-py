@@ -66,7 +66,7 @@ spec:
     spec:
       containers:
       - name: hello
-        image: paradigmctf-chal-hello:latest
+        image: paradigmctf-chal-extra-methods:latest
         imagePullPolicy: IfNotPresent
         env:
         - name: CHALLENGE
@@ -77,8 +77,6 @@ spec:
           value: "http://127.0.0.1:8545"
         - name: ENV
           value: "local"
-        - name: EXTRA_ALLOWED_METHODS
-          value: "eth_sign"
         ports:
         - containerPort: 1337
           name: tcp-1337
