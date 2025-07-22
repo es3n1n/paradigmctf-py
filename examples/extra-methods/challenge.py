@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from ctf_launchers.pwn_launcher import PwnChallengeLauncher
 from ctf_server.types import LaunchAnvilInstanceArgs
 
