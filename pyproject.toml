@@ -58,6 +58,7 @@ ignore = [
     "COM812", "ISC001", "W391", "D",
     "FIX001", "FIX002", "TD003", "S104",
     "TD001", "T201", "T203", "S101",
+    "EXE001",
     # This is temporary:
     "BLE001",
 ]
