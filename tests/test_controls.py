@@ -1,7 +1,8 @@
+import asyncio
 from urllib.parse import urlparse
 
 from cheb3 import Connection
-from web3 import Web3
+from web3 import AsyncWeb3, WebSocketProvider
 
 from . import HELLO_PWN
 
@@ -24,9 +25,12 @@ def test_launch() -> None:
     assert connection.get_balance(account.address)
 
     # Make sure ws endpoint is also up
-    w3 = Web3(Web3.LegacyWebSocketProvider(instance['ws_endpoint']))
-    w3.is_connected(show_traceback=True)
-    assert w3.eth.get_balance(account.address)
+    async def ws_test() -> None:
+        async with AsyncWeb3(WebSocketProvider(instance['ws_endpoint'])) as w3:
+            assert await w3.is_connected(show_traceback=True)
+            assert await w3.eth.get_balance(account.address)
+
+    asyncio.run(ws_test())
 
 
 def test_get_info() -> None:

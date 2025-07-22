@@ -93,11 +93,11 @@ def validate_request(request: dict, instance_info: InstanceInfo) -> dict | None:
         return jsonrpc_fail(None, -32600, 'invalid jsonrpc id')
 
     if not isinstance(request_method, str):
-        return jsonrpc_fail(request['id'], -32600, 'invalid jsonrpc method')
+        return jsonrpc_fail(request_id, -32600, 'invalid jsonrpc method')
 
     denied = request_method.split('_')[0] not in ALLOWED_NAMESPACES or request_method in DISALLOWED_METHODS
     if denied and request_method not in (instance_info['extra_allowed_methods'] or []):
-        return jsonrpc_fail(request['id'], -32600, 'forbidden jsonrpc method')
+        return jsonrpc_fail(request_id, -32600, 'forbidden jsonrpc method')
 
     return None
 
@@ -186,10 +186,16 @@ async def ws_rpc(external_id: str, anvil_id: str, client_ws: WebSocket) -> None:
     try:
         async with websockets.connect(instance_host) as remote_ws:
             while True:
-                message = await client_ws.receive_text()
+                raw_message = await client_ws.receive()
+                if raw_message['type'] == 'websocket.disconnect':
+                    break
 
+                if raw_message['type'] != 'websocket.receive':
+                    continue
+
+                message_data: str = raw_message.get('text') or raw_message.get('bytes', b'').decode('utf-8')
                 try:
-                    json_msg = json.loads(message)
+                    json_msg = json.loads(message_data)
                 except json.JSONDecodeError:
                     await client_ws.send_json(jsonrpc_fail(None, -32600, 'expected json body'))
                     continue
@@ -198,7 +204,7 @@ async def ws_rpc(external_id: str, anvil_id: str, client_ws: WebSocket) -> None:
                     await client_ws.send_json(validation)
                     continue
 
-                await remote_ws.send(message)
+                await remote_ws.send(message_data)
                 response = await remote_ws.recv()
 
                 if isinstance(response, str):
