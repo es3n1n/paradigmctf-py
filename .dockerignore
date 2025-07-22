@@ -6,3 +6,4 @@
 **/Dockerfile
 **/compose.yml
 compose/
+examples/

@@ -7,7 +7,7 @@ def test_challenge_hello() -> None:
     data = HELLO_PWN.launch(kill_if_exists=True)
     assert HELLO_PWN.get_pwn_flag() is None
 
-    contracts = compile_src_for('hello', 'Hello.sol', solc_version='0.8.20')
+    contracts = compile_src_for('hello', 'Hello.sol', solc_version='0.8.27')
     conn = Connection(data['http_endpoint'])
     acc = conn.account(data['private_key'])
 

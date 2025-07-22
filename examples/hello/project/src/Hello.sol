@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+// Fixed version to avoid foundry/4668
+pragma solidity 0.8.27;
 
 contract Hello {
     bool solved = false;
