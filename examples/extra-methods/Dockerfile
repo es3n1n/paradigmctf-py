@@ -1,5 +1,6 @@
 FROM ghcr.io/foundry-rs/foundry:latest AS builder
 
+# Running as root to have access to /artifacts/
 USER root
 ENV FOUNDRY_DISABLE_NIGHTLY_WARNING=1
 
